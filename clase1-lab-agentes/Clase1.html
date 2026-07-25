@@ -1,0 +1,560 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cypher · Grupo Bios — Sesión 1: Agentes de IA</title>
+<style>
+  :root{
+    --bg:#0A3033;            /* verde petróleo Cypher */
+    --bg2:#0D3A3D;
+    --ink:#FFFFFF;
+    --muted:#B9CFCC;
+    --or1:#F5A623;           /* naranja claro */
+    --or2:#F5501E;           /* naranja profundo */
+    --card:#F7FAF9;          /* tarjeta clara para diagramas */
+    --panel:rgba(255,255,255,.06);
+    --panel-bd:rgba(245,166,35,.35);
+    --code-bg:#08262a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Calibri","Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+    overflow:hidden;
+  }
+  .deck{position:fixed;inset:0}
+  .slide{
+    position:absolute;inset:0;
+    display:none;
+    flex-direction:column;
+    padding:4.2vh 5vw 6vh;
+    background:
+      radial-gradient(1200px 600px at 88% -10%, rgba(245,80,30,.12), transparent 60%),
+      radial-gradient(900px 500px at -5% 110%, rgba(245,166,35,.10), transparent 55%),
+      var(--bg);
+    animation:fade .4s ease;
+  }
+  .slide.active{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* ---------- helpers ---------- */
+  .kicker{font-size:1.5vh;letter-spacing:.32em;text-transform:uppercase;color:var(--or1);font-weight:700;margin-bottom:1.2vh}
+  h1{font-size:6.6vh;line-height:1.02;font-weight:800;letter-spacing:-.01em}
+  h2{font-size:4.6vh;line-height:1.06;font-weight:800;letter-spacing:-.01em;margin-bottom:1.4vh}
+  h2 .g,h1 .g{background:linear-gradient(92deg,var(--or1),var(--or2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lead{font-size:2.55vh;color:var(--muted);max-width:60ch;line-height:1.5}
+  p{font-size:2.35vh;line-height:1.5;color:#EAF2F1}
+  .accentbar{width:9vh;height:.7vh;border-radius:99px;background:linear-gradient(92deg,var(--or1),var(--or2));margin:1.4vh 0 2.2vh}
+  strong{color:#fff;font-weight:700}
+  .or{color:var(--or1);font-weight:700}
+
+  .cols{display:flex;gap:3vw;flex:1;min-height:0}
+  .cols.center{align-items:center}
+  .col{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+  .grow{flex:1;min-height:0}
+
+  .imgcard{background:var(--card);border-radius:16px;padding:2vh;display:flex;align-items:center;justify-content:center;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+  .imgcard img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+  .imgcard.fill{height:100%}
+
+  ul.feat{list-style:none;display:flex;flex-direction:column;gap:1.5vh;margin-top:1vh}
+  ul.feat li{position:relative;padding-left:3.4vh;font-size:2.35vh;line-height:1.4;color:#EAF2F1}
+  ul.feat li:before{content:"";position:absolute;left:0;top:.75vh;width:1.5vh;height:1.5vh;border-radius:4px;background:linear-gradient(135deg,var(--or1),var(--or2))}
+  ul.feat li b{color:#fff}
+
+  .cards{display:grid;gap:2vh;flex:1}
+  .cards.c1{grid-template-columns:1fr}
+  .cards.c2{grid-template-columns:1fr 1fr}
+  .cards.c3{grid-template-columns:repeat(3,1fr)}
+  .cards.c4{grid-template-columns:repeat(4,1fr)}
+  .card{
+    background:var(--panel);border:1px solid var(--panel-bd);border-radius:14px;
+    padding:2.4vh 2.2vh;display:flex;flex-direction:column;gap:1vh;
+  }
+  .card .n{font-size:2vh;font-weight:800;color:var(--or1);letter-spacing:.05em}
+  .card h3{font-size:2.5vh;font-weight:800;color:#fff}
+  .card p{font-size:1.95vh;color:var(--muted);line-height:1.42}
+  .icon{font-size:3.4vh;line-height:1}
+
+  table.t{width:100%;border-collapse:collapse;font-size:2vh}
+  table.t th,table.t td{text-align:left;padding:1.5vh 1.6vh;border-bottom:1px solid rgba(255,255,255,.12)}
+  table.t th{color:var(--or1);text-transform:uppercase;letter-spacing:.12em;font-size:1.5vh}
+  table.t td b{color:#fff}
+  table.t tr td:first-child{color:var(--or1);font-weight:800;white-space:nowrap}
+
+  pre{background:var(--code-bg);border:1px solid rgba(245,166,35,.3);border-radius:12px;padding:2.2vh;overflow:auto;
+      font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-size:1.95vh;line-height:1.55;color:#D9EFEA}
+  pre code{color:#D9EFEA}
+  .tok-k{color:#F5A623}.tok-s{color:#9BE7C4}.tok-p{color:#8fd0d6}
+
+  .stars{color:var(--or1);letter-spacing:.15em;font-size:2.2vh}
+  .dim{color:rgba(255,255,255,.28)}
+
+  /* title slide */
+  .title{justify-content:center}
+  .title .logo{height:8.5vh;width:auto;align-self:flex-start;object-fit:contain;margin-bottom:4vh;filter:drop-shadow(0 8px 24px rgba(0,0,0,.4))}
+  .title h1{font-size:7.4vh}
+  .title .sub{margin-top:2.4vh;font-size:2.8vh;color:var(--muted)}
+  .pill{display:inline-block;padding:.9vh 2vh;border:1px solid var(--panel-bd);border-radius:99px;color:var(--or1);
+        font-size:1.9vh;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3vh;background:var(--panel)}
+
+  /* footer / chrome */
+  .foot{position:fixed;left:5vw;bottom:2.2vh;display:flex;align-items:center;gap:1.4vh;font-size:1.6vh;color:var(--muted);z-index:5}
+  .foot img{height:2.6vh;opacity:.9}
+  .counter{position:fixed;right:5vw;bottom:2.2vh;font-size:1.7vh;color:var(--muted);z-index:5;font-variant-numeric:tabular-nums}
+  .counter b{color:var(--or1)}
+  .progress{position:fixed;left:0;top:0;height:5px;background:linear-gradient(92deg,var(--or1),var(--or2));width:0;z-index:6;transition:width .3s}
+  .nav{position:fixed;right:5vw;bottom:5.4vh;display:flex;gap:1vh;z-index:6}
+  .nav button{width:4.4vh;height:4.4vh;border-radius:50%;border:1px solid var(--panel-bd);background:var(--panel);color:#fff;
+    font-size:2.2vh;cursor:pointer;transition:.2s}
+  .nav button:hover{background:linear-gradient(135deg,var(--or1),var(--or2));border-color:transparent}
+  .tag{position:absolute;top:4.2vh;right:5vw;font-size:1.6vh;color:var(--muted);letter-spacing:.1em}
+
+  .quote{font-size:3.4vh;line-height:1.35;font-weight:700;max-width:24ch}
+  .metaphor{display:flex;align-items:center;gap:2vh;font-size:2.4vh;color:#EAF2F1;margin-top:1.6vh;flex-wrap:wrap}
+  .chip{background:var(--panel);border:1px solid var(--panel-bd);border-radius:10px;padding:1vh 1.6vh;font-weight:700;color:#fff;font-size:2vh}
+</style>
+</head>
+<body>
+<div class="progress" id="prog"></div>
+<div class="deck" id="deck">
+
+  <!-- 1 · PORTADA -->
+  <section class="slide active title">
+    <img class="logo" src="./images/cypher-logo.png" alt="Cypher">
+    <span class="pill">Formación en Inteligencia Artificial · Grupo Bios</span>
+    <h1>Sesión 1<br><span class="g">Agentes de IA</span> y arquitecturas multiagénticas</h1>
+    <p class="sub">Fundamentos, niveles de agencia, patrones de diseño y Function Calling.<br>Stack del programa: Python · LangChain · N8N</p>
+  </section>
+
+  <!-- 2 · AGENDA -->
+  <section class="slide">
+    <div class="kicker">Ruta de la sesión</div>
+    <h2>Lo que veremos <span class="g">hoy</span></h2>
+    <div class="accentbar"></div>
+    <div class="cards c4 grow">
+      <div class="card"><div class="n">01</div><h3>¿Qué es un agente?</h3><p>Agente vs. LLM puro y la metáfora del cerebro con brazos.</p></div>
+      <div class="card"><div class="n">02</div><h3>Conceptos clave</h3><p>Percepción, razonamiento, planificación y acción.</p></div>
+      <div class="card"><div class="n">03</div><h3>Componentes</h3><p>Modelo, herramientas y memoria del agente.</p></div>
+      <div class="card"><div class="n">04</div><h3>Niveles de agencia</h3><p>De procesador simple a sistema multiagente.</p></div>
+      <div class="card"><div class="n">05</div><h3>Patrones</h3><p>ReAct, Plan-and-Execute y Router.</p></div>
+      <div class="card"><div class="n">06</div><h3>Function Calling</h3><p>Cómo el LLM ejecuta herramientas, en detalle.</p></div>
+      <div class="card"><div class="n">07</div><h3>Multiagente</h3><p>Arquitecturas: red, supervisor, jerárquica…</p></div>
+      <div class="card"><div class="n">08</div><h3>Hands-on</h3><p>Tu primer agente ReAct con LangChain.</p></div>
+    </div>
+  </section>
+
+  <!-- 3 · QUÉ ES UN AGENTE -->
+  <section class="slide">
+    <div class="kicker">Concepto 01</div>
+    <h2>¿Qué es un <span class="g">agente de IA</span>?</h2>
+    <div class="accentbar"></div>
+    <div class="cols center">
+      <div class="col">
+        <p>Es una forma avanzada de IA enfocada en la <strong>toma de decisiones y la acción autónomas</strong>.</p>
+        <p style="margin-top:1.6vh">A diferencia de un modelo de lenguaje —que solo predice el siguiente token más probable— un agente puede <strong>decidir</strong> y <strong>actuar</strong> sobre su entorno.</p>
+        <div class="metaphor">
+          <span class="chip">🧠 Cerebro = LLM</span>
+          <span>+</span>
+          <span class="chip">🦾 Bracitos = herramientas</span>
+        </div>
+        <p style="margin-top:1.6vh;color:var(--muted)">Recibe la petición del usuario y <span class="or">él mismo</span> decide qué herramienta usar, sin que se le indique.</p>
+      </div>
+      <div class="col">
+        <div class="imgcard"><img src="./images/llm-cerebro-brazos.png" alt="LLM como cerebro con herramientas: búsqueda, base de datos, API, documentos"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · AGENTE VS LLM -->
+  <section class="slide">
+    <div class="kicker">Concepto 01</div>
+    <h2>Agente <span class="g">vs.</span> LLM puro</h2>
+    <div class="accentbar"></div>
+    <div class="cards c2 grow">
+      <div class="card">
+        <div class="icon">💬</div>
+        <h3>LLM puro</h3>
+        <ul class="feat">
+          <li>Genera <b>texto</b> coherente a una petición</li>
+          <li>Predice el <b>token más probable</b></li>
+          <li>No ejecuta código ni llama a APIs</li>
+          <li>No accede a datos externos ni actúa</li>
+          <li>Comportamiento <b>estático</b>: mismo input → mismo tipo de output</li>
+        </ul>
+      </div>
+      <div class="card" style="border-color:rgba(245,80,30,.6)">
+        <div class="icon">🤖</div>
+        <h3>Agente de IA</h3>
+        <ul class="feat">
+          <li>Usa el LLM como <b>motor de razonamiento</b></li>
+          <li><b>Decide</b> qué herramienta usar y cuándo</li>
+          <li>Percibe el entorno y <b>toma acciones</b></li>
+          <li>Tiene <b>memoria</b> y mantiene contexto</li>
+          <li>Comportamiento <b>autónomo</b> y adaptativo</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · CONCEPTOS CLAVE -->
+  <section class="slide">
+    <div class="kicker">Concepto 02</div>
+    <h2>Conceptos clave de un <span class="g">agente</span></h2>
+    <div class="accentbar"></div>
+    <div class="cols center">
+      <div class="col" style="flex:1.05">
+        <div class="cards c2" style="grid-template-rows:1fr 1fr">
+          <div class="card"><div class="icon">👁️</div><h3>Percepción</h3><p>Recopila información del entorno: texto, imágenes, sensores, bases de datos, interfaces.</p></div>
+          <div class="card"><div class="icon">🧠</div><h3>Razonamiento</h3><p>Con el LLM analiza el contexto, identifica lo relevante y formula soluciones.</p></div>
+          <div class="card"><div class="icon">🗺️</div><h3>Planificación</h3><p>Fija objetivos, los divide en pasos y descubre la mejor forma de alcanzarlos.</p></div>
+          <div class="card"><div class="icon">⚡</div><h3>Acción</h3><p>Ejecuta tareas, toma decisiones e interactúa con otros sistemas.</p></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="imgcard"><img src="./images/componentes-agente.png" alt="Ciclo del agente: habilidades, metas y conocimiento previo; observaciones y acciones sobre el ambiente"></div>
+        <p style="text-align:center;margin-top:1.4vh;color:var(--muted);font-size:1.9vh">El agente percibe el <span class="or">ambiente</span>, razona y ejecuta <span class="or">acciones</span> que lo modifican.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · COMPONENTES -->
+  <section class="slide">
+    <div class="kicker">Concepto 03</div>
+    <h2>Principales <span class="g">componentes</span></h2>
+    <div class="accentbar"></div>
+    <div class="cards c3 grow">
+      <div class="card">
+        <div class="icon">🧠</div><h3>Modelo</h3>
+        <p>El LLM es el <b>“cerebro”</b>: entiende, razona y decide. Es la base sobre la que se construye toda la capacidad del agente.</p>
+      </div>
+      <div class="card">
+        <div class="icon">🦾</div><h3>Herramientas</h3>
+        <p>Funciones o recursos externos para <b>interactuar con el entorno</b>: APIs, bases de datos, búsqueda, archivos. Amplían lo que el agente puede hacer.</p>
+      </div>
+      <div class="card">
+        <div class="icon">💾</div><h3>Memoria</h3>
+        <p>Permite <b>mantener contexto</b>, aprender de la experiencia y mejorar con el tiempo recordando interacciones previas.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · TIPOS DE MEMORIA -->
+  <section class="slide">
+    <div class="kicker">Concepto 03 · Memoria</div>
+    <h2>Tipos de <span class="g">memoria</span></h2>
+    <div class="accentbar"></div>
+    <div class="cards c4 grow">
+      <div class="card"><div class="icon">⏱️</div><h3>Corto plazo</h3><p>Para las interacciones inmediatas y el contexto de la conversación actual.</p></div>
+      <div class="card"><div class="icon">📚</div><h3>Largo plazo</h3><p>Datos y conversaciones históricas que persisten entre sesiones.</p></div>
+      <div class="card"><div class="icon">🎬</div><h3>Episódica</h3><p>Registro de interacciones pasadas concretas de las que aprender.</p></div>
+      <div class="card"><div class="icon">🤝</div><h3>De consenso</h3><p>Información <b>compartida entre agentes</b> en un sistema multiagente.</p></div>
+    </div>
+    <p style="margin-top:2vh;color:var(--muted)">Con memoria, el agente <span class="or">adapta su comportamiento</span> a situaciones nuevas en lugar de empezar de cero cada vez.</p>
+  </section>
+
+  <!-- 8 · ¿QUÉ TAN AGÉNTICO? -->
+  <section class="slide">
+    <div class="kicker">Concepto 04</div>
+    <h2>¿Qué es y qué <span class="g">no es</span> un agente?</h2>
+    <div class="accentbar"></div>
+    <div class="cols center">
+      <div class="col">
+        <p class="quote">No hay una respuesta única y consensuada.</p>
+        <p style="margin-top:2vh">En vez de preguntar “¿es o no es un agente?”, la pregunta útil es:</p>
+        <p class="quote g" style="margin-top:1vh;color:var(--or1)">¿Qué tan <span style="color:#fff">agéntico</span> es el sistema?</p>
+      </div>
+      <div class="col">
+        <div class="card" style="border-color:rgba(245,80,30,.55)">
+          <p style="font-size:2.4vh">Lo determina el <strong>nivel de autonomía y control</strong> que el sistema tiene sobre sí mismo.</p>
+          <p style="margin-top:1.4vh;color:var(--muted)">A mayor capacidad de <span class="or">decidir</span>, <span class="or">iterar</span> y <span class="or">actuar</span> sin intervención, más agéntico es.</p>
+          <div class="metaphor" style="margin-top:1.6vh">
+            <span class="stars">☆☆☆</span><span style="color:var(--muted)">→</span><span class="stars">★★★★</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 · NIVELES DE AGENCIA (tabla) -->
+  <section class="slide">
+    <div class="kicker">Concepto 04 · Niveles de agencia</div>
+    <h2>Los 5 <span class="g">niveles de agencia</span></h2>
+    <div class="accentbar"></div>
+    <div class="imgcard fill grow"><img src="./images/niveles-agencia-tabla.png" alt="Tabla de niveles de agencia: procesador simple, enrutador, llamador de herramientas, agente multipasos, multiagente"></div>
+    <p style="margin-top:1.6vh;color:var(--muted)">A más estrellas, mayor impacto de la salida del LLM sobre el <span class="or">flujo del programa</span>.</p>
+  </section>
+
+  <!-- 10 · NIVEL 1 y 2 -->
+  <section class="slide">
+    <div class="kicker">Niveles de agencia · 1 y 2</div>
+    <h2>Procesador simple <span class="g">·</span> Enrutador</h2>
+    <div class="accentbar"></div>
+    <div class="cols">
+      <div class="col">
+        <div class="card"><div class="n">Nivel 1 · <span class="stars">☆☆☆</span></div><h3>Procesador simple</h3>
+          <p>La salida del LLM <b>no afecta</b> el flujo. Ej.: un traductor automático — siempre transforma input en output. Agencialidad casi nula.</p>
+        </div>
+        <div class="imgcard" style="margin-top:1.6vh"><img src="./images/nivel1-procesador-simple.png" alt="Entrada → Procesar LLM → Salida"></div>
+      </div>
+      <div class="col">
+        <div class="card"><div class="n">Nivel 2 · <span class="stars">★☆☆</span></div><h3>Enrutador (Router)</h3>
+          <p>El LLM decide entre <b>caminos predefinidos</b>. Ej.: clasificar una consulta como técnica (ruta A) o comercial (ruta B). Como un semáforo.</p>
+        </div>
+        <div class="imgcard" style="margin-top:1.6vh"><img src="./images/nivel2-enrutador.png" alt="Entrada → LLM toma decisión binaria → ¿Condición? → Camino A / Camino B → Salida"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 · NIVEL 3 y 4 -->
+  <section class="slide">
+    <div class="kicker">Niveles de agencia · 3 y 4</div>
+    <h2>Llamador de herramientas <span class="g">·</span> Multipasos</h2>
+    <div class="accentbar"></div>
+    <div class="cols">
+      <div class="col">
+        <div class="card"><div class="n">Nivel 3 · <span class="stars">★★☆</span></div><h3>Llamador de herramientas</h3>
+          <p>Decide en tiempo real si necesita una <b>herramienta externa</b> y la invoca con los parámetros correctos. Es el “cerebro con brazos”.</p>
+        </div>
+        <div class="imgcard" style="margin-top:1.6vh"><img src="./images/nivel3-tool-caller.png" alt="Usuario → Analiza contexto → ¿Necesita tool? → Genera JSON → Ejecuta → Respuesta final"></div>
+      </div>
+      <div class="col">
+        <div class="card"><div class="n">Nivel 4 · <span class="stars">★★★</span></div><h3>Agente multipasos</h3>
+          <p>Entra en un <b>ciclo iterativo</b>: piensa una acción, la ejecuta, guarda resultados en memoria y decide si continúa. Planea, actúa y aprende.</p>
+        </div>
+        <div class="imgcard" style="margin-top:1.6vh"><img src="./images/nivel4-multipasos.png" alt="Bucle: LLM decide acción → ejecutar paso → actualizar estado"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 · NIVEL 5 -->
+  <section class="slide">
+    <div class="kicker">Niveles de agencia · 5</div>
+    <h2>Sistema <span class="g">multiagente</span></h2>
+    <div class="accentbar"></div>
+    <div class="cols center">
+      <div class="col">
+        <div class="card" style="border-color:rgba(245,80,30,.55)">
+          <div class="n">Nivel 5 · <span class="stars">★★★★</span></div>
+          <h3>Equipo de agentes</h3>
+          <p>Un <b>agente supervisor</b> recibe la tarea y, si necesita expertos, delega en <b>sub-agentes especializados</b>: uno busca vuelos, otro hoteles, otro itinerarios…</p>
+          <p style="margin-top:1vh">Coordina las respuestas y <b>sintetiza</b> el resultado final. Máxima autonomía: un director de orquesta.</p>
+        </div>
+      </div>
+      <div class="col">
+        <div class="imgcard"><img src="./images/nivel5-multiagente.png" alt="Agente principal delega en sub-agentes especializados"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 · PATRÓN ReAct -->
+  <section class="slide">
+    <div class="kicker">Patrones de diseño · 1</div>
+    <h2>Patrón <span class="g">ReAct</span> — Reason + Act</h2>
+    <div class="accentbar"></div>
+    <div class="cols center">
+      <div class="col">
+        <p>El LLM <strong>alterna razonamiento y acción</strong> en un bucle hasta resolver la tarea:</p>
+        <ul class="feat">
+          <li><b>Thought</b> — piensa qué hacer y por qué</li>
+          <li><b>Action</b> — invoca una herramienta o API</li>
+          <li><b>Observation</b> — observa el resultado</li>
+          <li>Repite hasta la <b>respuesta final</b></li>
+        </ul>
+        <p style="margin-top:1.4vh;color:var(--muted)">Ventaja: se puede <span class="or">trazar su razonamiento</span> → agentes auditables y que se adaptan al vuelo. Es el <span class="or">default</span> para agentes simples.</p>
+      </div>
+      <div class="col">
+        <div class="imgcard"><img src="./images/react-loop.gif" alt="Bucle ReAct: pensamiento, acción y observación"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 · Plan-and-Execute + comparación -->
+  <section class="slide">
+    <div class="kicker">Patrones de diseño · 2</div>
+    <h2>Plan-and-Execute <span class="g">vs.</span> ReAct</h2>
+    <div class="accentbar"></div>
+    <div class="cols">
+      <div class="col">
+        <div class="card"><h3>🗺️ Planner</h3><p>Un LLM genera <b>por adelantado</b> un plan de varios pasos para toda la tarea.</p></div>
+        <div class="card" style="margin-top:1.4vh"><h3>⚙️ Executor</h3><p>Ejecuta cada paso del plan (a menudo con modelos más pequeños), invocando herramientas. Re-planifica si hace falta.</p></div>
+      </div>
+      <div class="col">
+        <table class="t">
+          <tr><th></th><th>ReAct</th><th>Plan &amp; Execute</th></tr>
+          <tr><td>Planeación</td><td>Un paso a la vez</td><td><b>Todo el plan primero</b></td></tr>
+          <tr><td>Ideal para</td><td>Entornos inciertos, adaptación al vuelo</td><td>Flujos largos y estructurados</td></tr>
+          <tr><td>Riesgo</td><td>Visión “cortoplacista”</td><td>Menos flexible si cambia el entorno</td></tr>
+          <tr><td>Costo</td><td>Más llamadas al modelo grande</td><td><b>Más económico</b> (modelos pequeños por paso)</td></tr>
+        </table>
+        <p style="margin-top:1.4vh;color:var(--muted);font-size:1.9vh">ReAct = default para lo simple. Plan-and-Execute brilla en tareas complejas con dependencias entre pasos.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15 · Router pattern -->
+  <section class="slide">
+    <div class="kicker">Patrones de diseño · 3</div>
+    <h2>Patrón <span class="g">Router</span></h2>
+    <div class="accentbar"></div>
+    <div class="cols center">
+      <div class="col">
+        <p>El LLM actúa como <strong>enrutador inteligente</strong>: clasifica la petición y la dirige al <strong>camino o especialista</strong> adecuado.</p>
+        <ul class="feat">
+          <li>Decide entre <b>rutas predefinidas</b> (A / B / C…)</li>
+          <li>No ejecuta la tarea, solo <b>redirige el flujo</b></li>
+          <li>Base de arquitecturas <b>supervisor</b> y multiagente</li>
+          <li>Simple, barato y muy <b>controlable</b></li>
+        </ul>
+        <p style="margin-top:1.4vh;color:var(--muted)">Ej.: “¿Cómo configuro mi email?” → ruta <span class="or">soporte técnico</span>.</p>
+      </div>
+      <div class="col">
+        <div class="imgcard"><img src="./images/nivel2-enrutador.png" alt="Router: decisión → Camino A / Camino B"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 16 · FUNCTION CALLING intro -->
+  <section class="slide">
+    <div class="kicker">Function Calling</div>
+    <h2>¿Cómo el LLM <span class="g">ejecuta herramientas</span>?</h2>
+    <div class="accentbar"></div>
+    <div class="cols center">
+      <div class="col">
+        <p>Los LLM <strong>solo generan texto</strong>: no corren código, ni llaman APIs, ni consultan bases de datos. Para eso existe el <span class="or">Function Calling</span>.</p>
+        <p style="margin-top:1.4vh">Es la capacidad del LLM de <strong>identificar cuándo necesita una acción externa</strong> y generar una <strong>llamada estructurada</strong> (normalmente JSON) indicando qué función usar y con qué argumentos.</p>
+        <div class="cards c2" style="margin-top:1.8vh">
+          <div class="card"><h3>📥 Recuperar datos</h3><p>Clima, divisas, RAG, APIs y bases de conocimiento.</p></div>
+          <div class="card"><h3>🚀 Tomar medidas</h3><p>Enviar formularios, actualizar estado, coordinar flujos.</p></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="imgcard"><img src="./images/function-calling-secuencia.png" alt="Secuencia de function calling entre Developer y Model en 5 pasos"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 17 · FUNCTION CALLING cómo funciona -->
+  <section class="slide">
+    <div class="kicker">Function Calling · paso a paso</div>
+    <h2>El <span class="g">flujo</span> completo</h2>
+    <div class="accentbar"></div>
+    <div class="cols center">
+      <div class="col" style="flex:.85">
+        <ul class="feat">
+          <li>El usuario da una <b>instrucción</b> al agente</li>
+          <li>El modelo <b>analiza</b> qué necesita el usuario</li>
+          <li>Revisa su <b>lista de tools</b> configuradas</li>
+          <li>Si necesita una, genera un <b>JSON estructurado</b> (función + argumentos)</li>
+          <li>El sistema <b>ejecuta</b> la función y obtiene un resultado</li>
+          <li>El resultado <b>vuelve al modelo</b>, que ya responde al usuario</li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="imgcard"><img src="./images/function-calling-flujo.png" alt="User → Application → Model, con llamada a función y API, y respuesta de vuelta"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 18 · FUNCTION CALLING ejemplo -->
+  <section class="slide">
+    <div class="kicker">Function Calling · ejemplo</div>
+    <h2>Ejemplo: <span class="g">get_weather</span></h2>
+    <div class="accentbar"></div>
+    <div class="cols center">
+      <div class="col">
+        <p>El usuario pregunta: <span class="or">“¿Qué clima hace en París?”</span></p>
+        <p style="margin-top:1.2vh">El modelo identifica que debe usar la herramienta <b>get_weather</b> y produce esta salida estructurada:</p>
+        <p style="margin-top:1.4vh;color:var(--muted)">El sistema entiende que debe llamar a <b>get_weather</b> con <b>"Paris, France"</b>. Ejecuta, obtiene el resultado, lo devuelve al modelo y este <span class="or">redacta la respuesta final</span>.</p>
+      </div>
+      <div class="col">
+<pre><code>[{
+  <span class="tok-p">"type"</span>: <span class="tok-s">"function_call"</span>,
+  <span class="tok-p">"id"</span>: <span class="tok-s">"fc_12345xyz"</span>,
+  <span class="tok-p">"call_id"</span>: <span class="tok-s">"call_12345xyz"</span>,
+  <span class="tok-p">"name"</span>: <span class="tok-s">"get_weather"</span>,
+  <span class="tok-p">"arguments"</span>: <span class="tok-s">"{\"location\":\"Paris, France\"}"</span>
+}]</code></pre>
+        <p style="margin-top:1.4vh;color:var(--muted);font-size:1.9vh">La tool <b>get_weather</b> debe existir y estar previamente configurada en el agente.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 19 · MULTIAGENTE por qué + arquitecturas -->
+  <section class="slide">
+    <div class="kicker">Sistemas multiagente</div>
+    <h2>¿Por qué dividir en <span class="g">varios agentes</span>?</h2>
+    <div class="accentbar"></div>
+    <div class="cols">
+      <div class="col" style="flex:.9">
+        <p style="color:var(--muted)">Cuando un solo agente crece, aparecen problemas: demasiadas herramientas, contexto inabarcable, necesidad de especialidades distintas.</p>
+        <div class="cards c1" style="margin-top:1.4vh;gap:1.2vh">
+          <div class="card" style="padding:1.6vh"><h3>🧩 Modularidad</h3><p>Más fácil de desarrollar, probar y mantener.</p></div>
+          <div class="card" style="padding:1.6vh"><h3>🎯 Especialización</h3><p>Agentes expertos por dominio → mejor rendimiento.</p></div>
+          <div class="card" style="padding:1.6vh"><h3>🎛️ Control</h3><p>Defines explícitamente cómo se comunican.</p></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="imgcard fill"><img src="./images/multiagente-orquestacion.png" alt="Usuario → Orquestación → varios agentes, cada uno con prompt, memoria y herramientas"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 20 · ARQUITECTURAS MULTIAGENTE -->
+  <section class="slide">
+    <div class="kicker">Sistemas multiagente · arquitecturas</div>
+    <h2>Formas de <span class="g">conectar</span> agentes</h2>
+    <div class="accentbar"></div>
+    <div class="cols center">
+      <div class="col" style="flex:.95">
+        <ul class="feat">
+          <li><b>Red</b> — cada agente puede hablar con todos</li>
+          <li><b>Supervisor</b> — uno decide a quién llamar</li>
+          <li><b>Supervisor (as tools)</b> — los agentes son herramientas del supervisor</li>
+          <li><b>Jerárquica</b> — supervisores de supervisores</li>
+          <li><b>Custom</b> — flujo parcialmente determinista a medida</li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="imgcard"><img src="./images/arquitecturas-multiagente.png" alt="Arquitecturas multiagente: single agent, network, supervisor, supervisor as tools, hierarchical, custom"></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- chrome -->
+<div class="foot"><img src="./images/cypher-logo.png" alt="Cypher"><span>Grupo Bios · Sesión 1 — Agentes de IA</span></div>
+<div class="counter"><b id="cur">1</b> / <span id="tot">20</span></div>
+<div class="nav"><button id="prev" aria-label="Anterior">‹</button><button id="next" aria-label="Siguiente">›</button></div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  let i=0;const tot=slides.length;
+  document.getElementById('tot').textContent=tot;
+  function show(n){
+    i=Math.max(0,Math.min(tot-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    document.getElementById('cur').textContent=i+1;
+    document.getElementById('prog').style.width=((i+1)/tot*100)+'%';
+  }
+  document.getElementById('next').onclick=()=>show(i+1);
+  document.getElementById('prev').onclick=()=>show(i-1);
+  document.addEventListener('keydown',e=>{
+    if(['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){e.preventDefault();show(i+1)}
+    if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){e.preventDefault();show(i-1)}
+    if(e.key==='Home')show(0); if(e.key==='End')show(tot-1);
+    if(e.key==='f'||e.key==='F'){document.documentElement.requestFullscreen?.()}
+  });
+  // swipe (touch)
+  let x0=null;
+  addEventListener('touchstart',e=>x0=e.touches[0].clientX,{passive:true});
+  addEventListener('touchend',e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;if(Math.abs(dx)>50)show(i+(dx<0?1:-1));x0=null},{passive:true});
+  show(0);
+</script>
+</body>
+</html>

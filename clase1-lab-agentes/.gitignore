@@ -1,0 +1,30 @@
+# Credenciales — NUNCA se versionan (spec 09, Riesgo 5)
+.env
+.env.local
+*.key
+
+# Base de datos generada — se versiona el generador, no el binario (spec 03)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Caché de respuestas del modelo (spec 09, 1a)
+.cache_llm/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+notebook/.ipynb_checkpoints/
+
+# Sistema
+.DS_Store
+Thumbs.db

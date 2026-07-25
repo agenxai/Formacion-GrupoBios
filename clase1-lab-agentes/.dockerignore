@@ -1,0 +1,27 @@
+# El contexto de build es lo único que ve Docker. Todo lo sensible se excluye acá
+# ADEMÁS de no copiarse en el Dockerfile: la key no debe poder entrar a una capa de
+# la imagen ni por accidente (spec 09, Riesgo 5).
+.env
+.env.local
+*.key
+
+# Se genera dentro del build; una copia del host la sobreescribiría con datos de
+# otra fecha de referencia.
+*.db
+*.db-journal
+.cache_llm/
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+notebook/.ipynb_checkpoints/
+
+.git/
+.gitignore
+.DS_Store
+
+# Documentación: no hace falta dentro de la imagen.
+specs/
+README.md

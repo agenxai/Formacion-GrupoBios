@@ -1,0 +1,101 @@
+# =============================================================================
+#  Laboratorio "Niveles de Agencia" — Clase 1 · Grupo Bios / Qypher
+#
+#      docker compose up
+#
+#  Deja dos servicios operativos sin ningún otro paso (spec 09, Riesgo 4):
+#      · tablero  → http://127.0.0.1:8000   (lo proyecta el facilitador)
+#      · notebook → http://127.0.0.1:8888   (lo usa cada participante)
+#
+#  SEGURIDAD DE RED (spec 09, Riesgo 5)
+#  Los puertos se publican SOLO en 127.0.0.1, nunca en 0.0.0.0. No es paranoia:
+#  `PUT /api/prompts/{nivel}` no tiene autenticación y Jupyter corre sin token.
+#  Publicarlos en la red de la oficina sería entregar el system prompt y un
+#  intérprete de Python a cualquiera en la misma red.
+#
+#  Dentro del contenedor los procesos sí escuchan en 0.0.0.0 — es obligatorio
+#  para que Docker pueda enrutar el puerto publicado. El control está en el
+#  binding del host, que es la línea `127.0.0.1:...` de abajo.
+# =============================================================================
+
+services:
+  tablero:
+    build: .
+    image: clase1-lab-agentes
+    container_name: clase1-tablero
+    command: >
+      uvicorn backend.main:app
+      --host 0.0.0.0
+      --port 8000
+      --no-server-header
+    ports:
+      - "127.0.0.1:${PUERTO_TABLERO:-8000}:8000"
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      # Código montado desde el host, en SOLO LECTURA.
+      #
+      # Sin esto, el frontend y el backend viven únicamente dentro de la imagen y
+      # cualquier ajuste —incluido un `git pull` con una corrección— exige
+      # reconstruir. Peor: el síntoma engaña, porque el archivo del disco ya está
+      # cambiado y el contenedor sigue sirviendo el viejo sin decir nada.
+      #
+      # Con el montaje:
+      #   · frontend (HTML/CSS/JS) → basta recargar el navegador.
+      #   · backend (Python)       → `docker compose restart tablero`, segundos.
+      #
+      # Solo lectura a propósito: el contenedor no debe poder modificar el
+      # repositorio. Y sin `--reload` en uvicorn, para que un guardado accidental
+      # no reinicie el servidor en medio de una demo.
+      - ./frontend:/app/frontend:ro
+      - ./backend:/app/backend:ro
+      # Caché compartido con el notebook: lo que corre el facilitador en la demo
+      # queda cacheado para los participantes (spec 09, 1a).
+      - cache_llm:/app/.cache_llm
+      # Las trazas de replay se graban desde el contenedor, así que este va con
+      # escritura y después del montaje de backend, que lo cubriría en solo lectura.
+      - ./backend/replay:/app/backend/replay
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/salud',timeout=3).status==200 else 1)"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  notebook:
+    build: .
+    image: clase1-lab-agentes
+    container_name: clase1-notebook
+    command: >
+      jupyter lab
+      --ip=0.0.0.0
+      --port=8888
+      --no-browser
+      --ServerApp.root_dir=/app
+      --ServerApp.default_url=/lab/tree/notebook/1-los-cinco-niveles-explicado.ipynb
+      --IdentityProvider.token=
+      --ServerApp.password=
+    ports:
+      - "127.0.0.1:${PUERTO_NOTEBOOK:-8888}:8888"
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      # El notebook se monta desde el host para que el trabajo del participante
+      # sobreviva a `docker compose down`.
+      - ./notebook:/app/notebook
+      # Mismo backend que el tablero, para que no puedan desincronizarse: si el
+      # notebook funciona, el tablero funciona (spec 02).
+      - ./backend:/app/backend:ro
+      - cache_llm:/app/.cache_llm
+      - ./backend/replay:/app/backend/replay
+    restart: unless-stopped
+
+volumes:
+  cache_llm:

@@ -1,0 +1,501 @@
+<!doctype html>
+<!--
+  Tablero de Agencia — Sesión 1 · Grupo Bios / Qypher
+
+  NO ES UN CHAT. ES UN INSTRUMENTO DE OBSERVACIÓN (spec 07).
+
+  Regla que resuelve las dudas de diseño: si un elemento no revela algo del
+  funcionamiento interno del agente, no va.
+
+  Tres vistas. La predeterminada es PASO A PASO —un nivel a la vez, con su
+  diagrama de arquitectura encendiéndose conforme corre— porque es el modo con el
+  que se explica. Las cinco columnas en paralelo son excelentes para el cierre y
+  un estorbo mientras se explica: nadie puede seguir cinco cosas a la vez.
+-->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Laboratorio · Niveles de Agencia · Grupo Bios</title>
+<link rel="stylesheet" href="/estilos.css" />
+<link rel="icon" href="/assets/grupo-bios.png" />
+
+<!--
+  EL ORDEN DE ESTOS DOS SCRIPTS IMPORTA Y NO SE PUEDE INVERTIR.
+
+  El bundle de Alpine arranca solo en cuanto se ejecuta — no espera a
+  DOMContentLoaded. Si se carga antes que `app.js`, recorre el DOM cuando
+  `tablero()` todavía no existe: `x-data` falla, Alpine sigue con un objeto vacío
+  y el resultado es una página que se ve —porque `x-cloak` sí se quitó— pero donde
+  NINGUNA expresión funciona.
+-->
+<script defer src="/diagrama.js"></script>
+<script defer src="/app.js"></script>
+<script defer src="/assets/vendor/alpine.min.js"></script>
+
+<div x-data="tablero()" x-init="iniciar()" x-cloak>
+  <template x-if="bannerReplay">
+    <div class="banner-replay" role="alert">
+      <span aria-hidden="true">◐</span>
+      <span x-text="bannerReplay"></span>
+      <button @click="bannerReplay = null">Entendido</button>
+    </div>
+  </template>
+
+  <header class="cabecera">
+    <img class="logo-bios" src="/assets/grupo-bios.png" alt="Grupo Bios" />
+    <h1 class="titulo">Laboratorio · Niveles de Agencia</h1>
+
+    <div class="pestanas" role="tablist">
+      <button class="pestana" role="tab" :aria-selected="vista === 'paso'"
+              @click="vista = 'paso'">Paso a paso</button>
+      <button class="pestana" role="tab" :aria-selected="vista === 'comparacion'"
+              @click="vista = 'comparacion'">Comparación</button>
+      <button class="pestana" role="tab" :aria-selected="vista === 'detalle'"
+              @click="irADetalle()">Detalle</button>
+    </div>
+
+    <div class="cabecera-derecha">
+      <span class="indicador" :class="salud.modo === 'vivo' ? 'vivo' : 'replay'">
+        <span aria-hidden="true" x-text="salud.modo === 'vivo' ? '●' : '◐'"></span>
+        <span x-text="salud.modo === 'vivo' ? 'vivo' : 'replay'"></span>
+      </span>
+      <span class="indicador" title="Modelo activo">
+        <span aria-hidden="true">▣</span>
+        <span x-text="salud.modelo || '—'"></span>
+      </span>
+      <div class="medidor">
+        <!-- Con precios sin configurar NO se muestra $0.00: se dice que el costo
+             no está configurado y se compara por tokens (spec 09, Riesgo 3). -->
+        <span x-show="salud.costo_configurado"
+              x-text="`$${(gasto.gasto_usd || 0).toFixed(4)} / $${(salud.tope_usd || 0).toFixed(2)}`"></span>
+        <span x-show="!salud.costo_configurado" class="sin-costo">
+          costo no configurado ·
+          <span x-text="`${(gasto.tokens_in || 0) + (gasto.tokens_out || 0)} tokens`"></span>
+        </span>
+        <div class="medidor-barra" x-show="salud.costo_configurado">
+          <div class="medidor-relleno" :class="claseGasto()"
+               :style="`width: ${porcentajeGasto()}%`"></div>
+        </div>
+      </div>
+      <button class="pestana" @click="alternarTema()"
+              :title="'Cambiar a tema ' + (temaOscuro ? 'claro' : 'oscuro')">
+        <span x-text="temaOscuro ? '☀' : '☾'"></span>
+      </button>
+    </div>
+  </header>
+
+  <p class="aviso-datos">
+    <strong>Datos sintéticos.</strong>
+    <span x-text="salud.aviso_datos || ''"></span>
+  </p>
+
+  <!-- Barra de pregunta, compartida por las dos vistas de ejecución -->
+  <div class="consulta" x-show="vista !== 'detalle'">
+    <div class="fila-consulta">
+      <input class="entrada" type="text" x-model="pregunta"
+             placeholder="Pregunta sobre la operación…"
+             @keydown.enter="ejecutar()" aria-label="Pregunta" />
+      <button class="boton" @click="ejecutar()"
+              :disabled="corriendo || !pregunta.trim()">
+        <span x-show="!corriendo"
+              x-text="vista === 'paso' ? `Ejecutar ${nivelActual.toUpperCase()}` : 'Ejecutar los 5'"></span>
+        <span x-show="corriendo">Ejecutando…</span>
+      </button>
+      <button class="boton secundario" x-show="corriendo" @click="detener()">Detener</button>
+    </div>
+
+    <div class="chips">
+      <template x-for="p in preguntas" :key="p.id">
+        <button class="chip" @click="usarChip(p)" :title="p.por_que">
+          <span x-text="p.chip"></span>
+          <!-- "El nivel que la resuelve bien" es CONTENIDO, no metadata: enseña
+               que no toda pregunta necesita el nivel más alto. -->
+          <span class="resuelve" x-text="p.nivel_que_la_resuelve.toUpperCase()"></span>
+        </button>
+      </template>
+    </div>
+  </div>
+
+  <!-- ==================== VISTA · PASO A PASO ==================== -->
+  <section x-show="vista === 'paso'">
+    <!-- Selector de nivel: grande, para poder señalarlo desde el proyector -->
+    <nav class="selector-paso">
+      <template x-for="n in niveles" :key="n.id">
+        <button class="tarjeta-nivel" :class="{ activa: nivelActual === n.id }"
+                @click="irANivel(n.id)">
+          <span class="estrellas" x-text="n.estrellas"></span>
+          <strong x-text="n.id.toUpperCase()"></strong>
+          <span class="tarjeta-nombre" x-text="n.nombre"></span>
+          <span class="tarjeta-metricas" x-show="col(n.id).metricas"
+                x-text="`${col(n.id).metricas?.llamadas_llm} llm · ${(col(n.id).metricas?.tokens_in ?? 0) + (col(n.id).metricas?.tokens_out ?? 0)} tok`"></span>
+        </button>
+      </template>
+    </nav>
+
+    <div class="paso-cuerpo">
+      <!-- Encabezado del nivel -->
+      <div class="panel">
+        <div class="paso-titulo">
+          <span class="estrellas grande" x-text="meta(nivelActual).estrellas"></span>
+          <h2 x-text="`${nivelActual.toUpperCase()} · ${meta(nivelActual).nombre}`"></h2>
+          <code class="patron-grande" x-text="meta(nivelActual).patron"></code>
+        </div>
+        <div class="paso-textos">
+          <div>
+            <h3>Qué hace</h3>
+            <p x-text="meta(nivelActual).textos?.que_hace"></p>
+          </div>
+          <div>
+            <h3>Qué NO hace</h3>
+            <p x-text="meta(nivelActual).textos?.que_no_hace"></p>
+          </div>
+          <div>
+            <h3>Cuándo usarlo</h3>
+            <p x-text="meta(nivelActual).textos?.cuando_usarlo"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ DIAGRAMA ANIMADO ══════════
+           No es una ilustración al lado de la traza: es la traza ocurriendo
+           SOBRE el dibujo. Cada evento manda un paquete etiquetado a recorrer la
+           arista que le corresponde, así que se ve pasar la petición al modelo,
+           el tool_call a la herramienta, el dato de vuelta y la respuesta salir.
+      -->
+      <div class="panel">
+        <div class="cabeza-diagrama">
+          <h2>Cómo fluye la petición</h2>
+          <button class="boton secundario" @click="repetirAnimacion()"
+                  x-show="hayGrabacion()" :disabled="repitiendo || corriendo">
+            <span x-text="repitiendo ? 'Repitiendo…' : '↻ Repetir animación'"></span>
+          </button>
+        </div>
+        <p class="leyenda-diagrama" x-text="meta(nivelActual).diagrama?.leyenda"></p>
+
+        <!-- El SVG se inyecta como cadena: `<template x-for>` dentro de <svg>
+             no funciona (el parser lo crea en el espacio de nombres SVG y deja de
+             ser un HTMLTemplateElement, así que x-for no renderiza nada). -->
+        <div class="lienzo-diagrama" x-html="svgDiagrama(nivelActual)"></div>
+
+        <!-- Narración numerada: los mismos pasos en palabras, para poder
+             señalarlos después de que los paquetes ya pasaron. -->
+        <ol class="narracion" x-show="narracion.length">
+          <template x-for="n in narracion" :key="n.n">
+            <li :class="n.clase"><span class="num" x-text="n.n"></span>
+              <span x-text="n.texto"></span></li>
+          </template>
+        </ol>
+
+        <p class="pista" x-show="!narracion.length">
+          Ejecuta el nivel y el diagrama se anima solo: vas a ver pasar la
+          pregunta, la llamada a la herramienta y el dato de vuelta.
+        </p>
+      </div>
+
+      <!-- Traza en vivo, con la respuesta de cada herramienta a la vista -->
+      <div class="panel">
+        <h2>Qué está pasando por dentro</h2>
+        <div class="linea-tiempo grande">
+          <template x-for="(paso, i) in col(nivelActual).pasos" :key="i">
+            <div class="bloque-paso">
+              <div class="paso" :class="paso.clase">
+                <span class="marca" aria-hidden="true" x-text="paso.marca"></span>
+                <span>
+                  <span x-text="paso.texto"></span>
+                  <span class="paso-detalle" x-text="paso.detalle"></span>
+                </span>
+              </div>
+
+              <!-- La pareja que hay que entender: lo que pidió el modelo y lo que
+                   devolvió la herramienta, juntas. -->
+              <template x-if="paso.crudo">
+                <div class="par-tool">
+                  <div class="mitad">
+                    <h4>🔧 Lo que pidió el modelo</h4>
+                    <p class="pista">El modelo no ejecuta nada: solo produce este JSON
+                      diciendo qué función llamarías y con qué argumentos.</p>
+                    <pre class="json" x-html="resaltar(paso.crudo)"></pre>
+                    <button class="pestana" @click="copiar(paso.crudo)">Copiar</button>
+                  </div>
+                  <div class="mitad">
+                    <h4>↩ Lo que devolvió la herramienta</h4>
+                    <p class="pista" x-show="paso.resumen" x-text="paso.resumen"></p>
+                    <p class="pista" x-show="!paso.resultado && !paso.errorTool">
+                      esperando…</p>
+                    <template x-if="paso.resultado">
+                      <details>
+                        <summary x-text="`ver JSON completo${paso.filas != null ? ' · ' + paso.filas + ' filas' : ''}${paso.msTool != null ? ' · ' + paso.msTool + ' ms' : ''}`"></summary>
+                        <pre class="json" x-html="resaltar(json(paso.resultado))"></pre>
+                      </details>
+                    </template>
+                    <p class="error-tool" x-show="paso.errorTool" x-text="paso.errorTool"></p>
+                  </div>
+                  <div class="mitad ancho-total" x-show="paso.docstring">
+                    <h4>📄 La docstring, tal como la ve el modelo</h4>
+                    <p class="pista">Esto es literalmente lo que viaja en la petición.
+                      <strong>La docstring es el prompt.</strong> Si el agente ignora una
+                      herramienta, la docstring es la sospechosa.</p>
+                    <pre class="json docstring" x-text="paso.docstring"></pre>
+                  </div>
+                </div>
+              </template>
+
+              <!-- Mensajes enviados al modelo: se ve crecer el contexto -->
+              <template x-if="paso.mensajes">
+                <details class="crudo">
+                  <summary x-text="`ver los ${paso.mensajes.length} mensajes enviados al modelo`"></summary>
+                  <template x-for="(m, j) in paso.mensajes" :key="j">
+                    <pre class="json" x-text="`[${m.rol}] ${m.contenido}`"></pre>
+                  </template>
+                </details>
+              </template>
+            </div>
+          </template>
+
+          <p class="pista" x-show="!col(nivelActual).pasos.length">
+            Sin ejecutar. Elige una pregunta y pulsa
+            <strong x-text="`Ejecutar ${nivelActual.toUpperCase()}`"></strong>.
+          </p>
+        </div>
+
+        <template x-for="(a, i) in col(nivelActual).avisos" :key="i">
+          <p class="aviso-alerta">⚠ <span x-text="a"></span></p>
+        </template>
+
+        <!-- Respaldo manual del aviso de N1: el regex falla ante «media tonelada»
+             y falla en el clímax de la demo. -->
+        <button class="boton-marcar"
+                x-show="nivelActual === 'n1' && col('n1').respuesta"
+                @click="marcarSinFuente()">
+          ⚠ marcar como afirmación sin fuente
+        </button>
+
+        <div class="respuesta grande" x-show="col(nivelActual).respuesta">
+          <h3>Respuesta</h3>
+          <p x-text="col(nivelActual).respuesta"></p>
+        </div>
+
+        <div class="pie-metricas" x-show="col(nivelActual).metricas">
+          <span x-text="`${col(nivelActual).metricas?.llamadas_llm ?? 0} llamadas al modelo`"></span>
+          <span x-text="`${col(nivelActual).metricas?.llamadas_tools ?? 0} herramientas`"></span>
+          <span x-text="`${((col(nivelActual).metricas?.ms_total ?? 0) / 1000).toFixed(1)} s`"></span>
+          <span x-text="`${(col(nivelActual).metricas?.tokens_in ?? 0)}+${(col(nivelActual).metricas?.tokens_out ?? 0)} tokens`"></span>
+          <span x-text="costoTexto(col(nivelActual).metricas)"
+                :class="col(nivelActual).metricas?.costo_configurado ? '' : 'sin-costo'"></span>
+          <span class="cache" x-show="col(nivelActual).metricas?.desde_cache">⚡ caché</span>
+        </div>
+      </div>
+
+      <!-- Qué observar: se lee después de correr, en voz alta -->
+      <div class="panel observa" x-show="col(nivelActual).terminado">
+        <h2>Qué observar acá</h2>
+        <p x-text="meta(nivelActual).textos?.observa"></p>
+      </div>
+
+      <!-- Herramientas del nivel -->
+      <div class="panel" x-show="(meta(nivelActual).tools || []).length">
+        <h2 x-text="`Herramientas de este nivel (${(meta(nivelActual).tools || []).length})`"></h2>
+        <div class="lista-tools">
+          <template x-for="t in meta(nivelActual).tools || []" :key="t.nombre">
+            <details class="tool">
+              <summary><code x-text="t.firma"></code></summary>
+              <p x-text="t.docstring"></p>
+            </details>
+          </template>
+        </div>
+      </div>
+
+      <nav class="navegacion-paso">
+        <button class="boton secundario" @click="avanzar(-1)"
+                :disabled="indiceActual() <= 0">← Nivel anterior</button>
+        <button class="boton" @click="avanzar(1)"
+                :disabled="indiceActual() >= niveles.length - 1">Siguiente nivel →</button>
+        <button class="boton secundario" @click="vista = 'comparacion'"
+                x-show="indiceActual() >= niveles.length - 1">
+          Ver los cinco juntos
+        </button>
+      </nav>
+    </div>
+  </section>
+
+  <!-- ==================== VISTA · COMPARACIÓN ==================== -->
+  <section x-show="vista === 'comparacion'">
+    <div class="consulta" style="padding-top: 0">
+      <div class="selector-niveles">
+        <template x-for="n in niveles" :key="n.id">
+          <label>
+            <input type="checkbox" :value="n.id" x-model="seleccion" />
+            <span x-text="`${n.estrellas} ${n.id.toUpperCase()}`"></span>
+          </label>
+        </template>
+      </div>
+    </div>
+
+    <div class="rejilla" :style="`--columnas: ${seleccion.length || 1}`">
+      <template x-for="id in nivelesVisibles()" :key="id">
+        <article class="columna">
+          <div class="columna-cabeza">
+            <div class="columna-titulo">
+              <span class="estrellas" x-text="meta(id).estrellas"></span>
+              <span x-text="`${id.toUpperCase()} · ${meta(id).nombre}`"></span>
+            </div>
+            <div class="patron" x-text="meta(id).patron"></div>
+          </div>
+
+          <div class="linea-tiempo">
+            <template x-for="(paso, i) in col(id).pasos" :key="i">
+              <div>
+                <div class="paso" :class="paso.clase">
+                  <span class="marca" aria-hidden="true" x-text="paso.marca"></span>
+                  <span>
+                    <span x-text="paso.texto"></span>
+                    <span class="paso-detalle" x-text="paso.detalle"></span>
+                  </span>
+                </div>
+                <p class="pista sangrada" x-show="paso.resumen" x-text="paso.resumen"></p>
+                <template x-if="paso.crudo">
+                  <details class="crudo">
+                    <summary>JSON de la tool call</summary>
+                    <pre class="json" x-html="resaltar(paso.crudo)"></pre>
+                  </details>
+                </template>
+              </div>
+            </template>
+            <div class="paso" x-show="!col(id).pasos.length">
+              <span class="marca" aria-hidden="true">·</span>
+              <span class="pista">Sin ejecutar</span>
+            </div>
+          </div>
+
+          <template x-for="(a, i) in col(id).avisos" :key="i">
+            <p class="aviso-alerta">⚠ <span x-text="a"></span></p>
+          </template>
+
+          <button class="boton-marcar" x-show="id === 'n1' && col(id).respuesta"
+                  @click="marcarSinFuente()">⚠ marcar como afirmación sin fuente</button>
+
+          <div class="respuesta" x-text="col(id).respuesta"></div>
+
+          <div class="pie-metricas" x-show="col(id).metricas">
+            <span x-text="`${col(id).metricas?.llamadas_llm ?? 0} LLM`"></span>
+            <span x-text="`${col(id).metricas?.llamadas_tools ?? 0} tools`"></span>
+            <span x-text="`${((col(id).metricas?.ms_total ?? 0) / 1000).toFixed(1)} s`"></span>
+            <span x-text="`${(col(id).metricas?.tokens_in ?? 0)}+${(col(id).metricas?.tokens_out ?? 0)} tok`"></span>
+            <span x-text="costoTexto(col(id).metricas)"
+                  :class="col(id).metricas?.costo_configurado ? '' : 'sin-costo'"></span>
+            <span class="cache" x-show="col(id).metricas?.desde_cache">⚡ caché</span>
+          </div>
+        </article>
+      </template>
+    </div>
+
+    <div class="detalle" x-show="hayMetricas()">
+      <div class="panel">
+        <h2>Tabla de cierre — con los números de esta corrida</h2>
+        <div class="envoltura-tabla">
+          <table class="tabla-cierre">
+            <thead>
+              <tr>
+                <th></th>
+                <template x-for="id in nivelesVisibles()" :key="id">
+                  <th x-text="id.toUpperCase()"></th>
+                </template>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="fila in filasCierre" :key="fila.etiqueta">
+                <tr :class="fila.destacada ? 'destacada' : ''">
+                  <th x-text="fila.etiqueta"></th>
+                  <template x-for="id in nivelesVisibles()" :key="id">
+                    <td x-text="fila.valor(id)"></td>
+                  </template>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== VISTA · DETALLE ==================== -->
+  <section class="detalle" x-show="vista === 'detalle'">
+    <div class="panel">
+      <label style="font-size: 14px; color: var(--texto-suave)">
+        Nivel
+        <select x-model="nivelDetalle" @change="cargarPrompt()"
+                style="font: inherit; padding: 6px; margin-left: 8px">
+          <template x-for="n in niveles" :key="n.id">
+            <option :value="n.id" x-text="`${n.estrellas} ${n.id.toUpperCase()} · ${n.nombre}`"></option>
+          </template>
+        </select>
+      </label>
+      <p style="font-size: 14px; color: var(--texto-suave)"
+         x-text="meta(nivelDetalle).descripcion"></p>
+    </div>
+
+    <div class="panel">
+      <h2>System prompt — editable</h2>
+      <p class="pista">
+        Cuando alguien pregunte «¿y si le prohibimos inventar?», se edita acá, se
+        vuelve a correr y se ve que N1 <em>sigue fallando</em>: su problema no es el
+        prompt, es que no tiene de dónde sacar el dato.
+      </p>
+      <textarea class="prompt" x-model="promptEditado"></textarea>
+      <div style="display: flex; gap: 8px; margin-top: 8px; align-items: center">
+        <button class="boton" @click="guardarPrompt()">Aplicar</button>
+        <button class="boton secundario" @click="restaurarPrompts()">Restaurar</button>
+        <span style="font-size: 14px; color: var(--exito)" x-show="promptGuardado">
+          aplicado · vuelve a ejecutar para ver el efecto
+        </span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Traza completa</h2>
+      <p class="pista" x-show="!trazaDetalle().length">
+        Ejecuta una pregunta y vuelve acá.
+      </p>
+      <template x-for="(e, i) in trazaDetalle()" :key="i">
+        <div style="border-bottom: 1px solid var(--borde-suave); padding: 6px 0">
+          <div style="font-size: 14px">
+            <strong x-text="e.tipo"></strong>
+            <span class="paso-detalle" x-text="` seq=${e.seq} · ${e.ts_ms} ms`"></span>
+          </div>
+          <template x-if="e.tipo === 'llm_request'">
+            <details>
+              <summary style="font-size: 14px; cursor: pointer">
+                mensajes enviados (<span x-text="e.mensajes.length"></span>) — el
+                contexto creciendo
+              </summary>
+              <template x-for="(m, j) in e.mensajes" :key="j">
+                <pre class="json" x-text="`[${m.rol}] ${m.contenido}`"></pre>
+              </template>
+            </details>
+          </template>
+          <template x-if="e.tipo === 'tool_call'">
+            <pre class="json" x-html="resaltar(e.crudo)"></pre>
+          </template>
+          <template x-if="e.tipo === 'tool_result'">
+            <details>
+              <summary style="font-size: 14px; cursor: pointer"
+                       x-text="`${e.nombre} → ${e.filas ?? '—'} filas (${e.ms} ms)`"></summary>
+              <pre class="json" x-html="resaltar(json(e.resultado))"></pre>
+            </details>
+          </template>
+          <template x-if="e.tipo === 'respuesta_final'">
+            <p style="font-size: 16px" x-text="`«${e.texto}»`"></p>
+          </template>
+          <template x-if="e.tipo === 'pensamiento'">
+            <p style="font-size: 14px; color: var(--texto-suave)"
+               x-text="e.texto ? `💭 ${e.texto}` : '💭 (el modelo no razonó en voz alta — el campo va vacío, no se inventa)'"></p>
+          </template>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <footer class="pie">
+    <img class="logo-qypher" src="/assets/qypher.png" alt="Qypher" />
+    <span>Qypher · Formación en Inteligencia Artificial</span>
+  </footer>
+</div>

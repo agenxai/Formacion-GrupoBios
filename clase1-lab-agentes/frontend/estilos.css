@@ -1,0 +1,968 @@
+/* ==========================================================================
+   Tablero de Agencia — identidad visual. Spec 06.
+
+   Los colores de marca se extrajeron por muestreo de píxeles del logo oficial
+   (Clase 1 - Agentes/Grupo Bios.png, 2410×668), no se estimaron a ojo. El logo
+   es plano: dos tintas, sin degradados.
+
+     Teal Bios  #00657F  · 82.5% del logo · wordmark, "GRUPO", arco inferior
+     Lima Bios  #AACF00  · 17.5% del logo · hojas del sol, punto de la "i"
+
+   Requisitos DUROS de la spec 06, verificados por scripts/validar_contraste.py:
+     · #00657F y #AACF00 son exactos y no se alteran.
+     · Ningún par (texto, fondo) baja de 4.5:1.
+     · El lima NUNCA es color de texto sobre fondo claro (da ≈1.8:1 sobre
+       blanco: proyectado en un salón con luz ambiente es ilegible).
+     · Tamaño mínimo de texto: 14 px. Nadie lee 12 px desde la cuarta fila.
+     · El color nunca es el único portador de significado: cada estado lleva
+       además su marca (○ ● ✕ ⚠).
+   ========================================================================== */
+
+:root {
+  /* Marca — valores exactos del logo, NO se alteran */
+  --bios-teal: #00657f;
+  --bios-lima: #aacf00;
+  --qypher: #f84f00;
+
+  /* Escala del teal */
+  --teal-900: #00323f;
+  --teal-800: #004a5d;
+  --teal-700: #00657f; /* = marca */
+  --teal-500: #0a87a6;
+  --teal-300: #5fb6cc;
+  --teal-100: #d6edf3;
+  --teal-050: #f0f8fa;
+
+  /* Escala del lima */
+  --lima-700: #607400; /* oscurecido desde #6e8600: 4.14:1 no pasaba sobre blanco */
+  --lima-500: #8cab00;
+  --lima-400: #aacf00; /* = marca */
+  --lima-100: #f0f7cc;
+
+  /* Grises fríos: matiz sesgado hacia el teal para que no se sientan ajenos */
+  --gris-900: #0e1a1f;
+  --gris-700: #33474e;
+  --gris-500: #5e7276; /* oscurecido desde #63797f: 4.38:1 no pasaba sobre --gris-050 */
+  --gris-300: #b9c7cb;
+  --gris-100: #edf1f2;
+  --gris-050: #f8fafa;
+
+  /* Semánticos — solo estado real */
+  --exito: #0f7b4f;
+  --alerta: #b45309;
+  --error: #b3261e;
+  --info: var(--teal-700);
+
+  /* Roles */
+  --fondo: #ffffff;
+  --fondo-hundido: var(--gris-050);
+  --fondo-panel: #ffffff;
+  --borde: var(--gris-300);
+  --borde-suave: var(--gris-100);
+  --texto: var(--gris-900);
+  --texto-suave: var(--gris-700);
+  --texto-tenue: var(--gris-500);
+  --acento: var(--teal-700);
+  --acento-texto: #ffffff;
+
+  --fuente-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --fuente-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  --radio: 6px;
+  --sombra: 0 1px 2px rgba(14, 26, 31, 0.08), 0 4px 12px rgba(14, 26, 31, 0.04);
+}
+
+/* Modo oscuro: se proyecta en salón y a veces con las luces bajas.
+   `--bios-teal` no alcanza contraste sobre fondo oscuro, así que para TEXTO se
+   sustituye por --teal-300. El logo nunca se recolorea. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #0b1418;
+    --fondo-hundido: #101d22;
+    --fondo-panel: #14232a;
+    --borde: #2a3f47;
+    --borde-suave: #1d3138;
+    --texto: #eaf2f4;
+    --texto-suave: #c3d3d8;
+    --texto-tenue: #93a8ae;
+    --acento: var(--teal-300);
+    --acento-texto: var(--gris-900);
+    --teal-050: #10242b;
+    --teal-100: #16333d;
+    --exito: #4bbd8b;
+    --alerta: #e5a34a;
+    --error: #f28b82;
+  }
+}
+
+:root[data-tema="oscuro"] {
+  --fondo: #0b1418;
+  --fondo-hundido: #101d22;
+  --fondo-panel: #14232a;
+  --borde: #2a3f47;
+  --borde-suave: #1d3138;
+  --texto: #eaf2f4;
+  --texto-suave: #c3d3d8;
+  --texto-tenue: #93a8ae;
+  --acento: var(--teal-300);
+  --acento-texto: var(--gris-900);
+  --teal-050: #10242b;
+  --teal-100: #16333d;
+  --exito: #4bbd8b;
+  --alerta: #e5a34a;
+  --error: #f28b82;
+}
+
+/* Tema claro forzado. Referencia los tokens en lugar de repetir hexes: cuando
+   `validar_contraste.py` obligó a oscurecer --gris-500 y --lima-700, este bloque
+   se había quedado con los valores viejos y el validador no lo veía, porque solo
+   lee el primer :root. Con var() hay una sola fuente de verdad. */
+:root[data-tema="claro"] {
+  --fondo: #ffffff;
+  --fondo-hundido: var(--gris-050);
+  --fondo-panel: #ffffff;
+  --borde: var(--gris-300);
+  --borde-suave: var(--gris-100);
+  --texto: var(--gris-900);
+  --texto-suave: var(--gris-700);
+  --texto-tenue: var(--gris-500);
+  --acento: var(--teal-700);
+  --acento-texto: #ffffff;
+  --teal-050: #f0f8fa;
+  --teal-100: #d6edf3;
+  --exito: #0f7b4f;
+  --alerta: #b45309;
+  --error: #b3261e;
+}
+
+/* -------------------------------------------------------------------------- */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--fuente-ui);
+  font-size: 15px; /* cuerpo; el mínimo del proyecto es 14px */
+  line-height: 1.5;
+  color: var(--texto);
+  background: var(--fondo);
+  -webkit-font-smoothing: antialiased;
+}
+
+[x-cloak] { display: none !important; }
+
+/* --- Encabezado ----------------------------------------------------------- */
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 20px;
+  background: var(--fondo-panel);
+  border-bottom: 1px solid var(--borde);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  flex-wrap: wrap;
+}
+
+/* El logo se sirve sobre fondo blanco o gris muy claro. NUNCA sobre teal o
+   lima: el wordmark es teal y desaparecería. Proporción original 2410×668
+   preservada con width:auto. */
+.logo-bios {
+  height: 32px;
+  width: auto;
+  display: block;
+}
+
+.titulo {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--acento);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.cabecera-derecha {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pestanas { display: flex; gap: 4px; }
+
+.pestana {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border: 1px solid var(--borde);
+  background: var(--fondo);
+  color: var(--texto-suave);
+  border-radius: var(--radio);
+  cursor: pointer;
+}
+.pestana[aria-selected="true"] {
+  background: var(--acento);
+  color: var(--acento-texto);
+  border-color: var(--acento);
+}
+
+.indicador {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--texto-suave);
+}
+.indicador.vivo { color: var(--acento); }
+.indicador.replay { color: var(--alerta); }
+
+.medidor {
+  min-width: 150px;
+  font-family: var(--fuente-mono);
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+.medidor-barra {
+  height: 6px;
+  background: var(--gris-100);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 3px;
+}
+.medidor-relleno { height: 100%; background: var(--acento); }
+.medidor-relleno.medio { background: var(--alerta); }
+.medidor-relleno.alto { background: var(--error); }
+
+/* Banner de conmutación a replay: ANCHO COMPLETO y persistente hasta cerrarse a
+   mano. Un badge no basta — el facilitador está mirando al grupo, no la esquina
+   de la pantalla, y diría "miren cómo el agente decide" sobre una traza
+   grabada. */
+.banner-replay {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 20px;
+  background: var(--alerta);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 500;
+}
+.banner-replay button {
+  margin-left: auto;
+  font: inherit;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--radio);
+  padding: 4px 12px;
+  cursor: pointer;
+}
+
+.aviso-datos {
+  padding: 8px 20px;
+  background: var(--teal-050);
+  border-bottom: 1px solid var(--borde-suave);
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+
+/* --- Barra de pregunta ---------------------------------------------------- */
+
+.consulta { padding: 16px 20px 12px; }
+
+.fila-consulta { display: flex; gap: 10px; align-items: stretch; }
+
+.entrada {
+  flex: 1;
+  font: inherit;
+  font-size: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--fondo);
+  color: var(--texto);
+}
+.entrada:focus-visible { outline: 3px solid var(--teal-300); outline-offset: 1px; }
+
+.boton {
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border: 1px solid var(--acento);
+  border-radius: var(--radio);
+  background: var(--acento);
+  color: var(--acento-texto);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.boton[disabled] { opacity: 0.55; cursor: not-allowed; }
+.boton.secundario {
+  background: var(--fondo);
+  color: var(--acento);
+}
+.boton:focus-visible { outline: 3px solid var(--teal-300); outline-offset: 2px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+.chip {
+  font: inherit;
+  font-size: 14px;
+  padding: 6px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--fondo);
+  color: var(--texto-suave);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.chip:hover { border-color: var(--acento); color: var(--acento); }
+/* Relleno lima CON texto gris-900 encima: ≈11:1. Es el uso permitido del lima. */
+.chip .resuelve {
+  background: var(--lima-400);
+  color: var(--gris-900);
+  border-radius: 4px;
+  padding: 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--fuente-mono);
+}
+
+.selector-niveles { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.selector-niveles label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+
+/* --- Rejilla de comparación ---------------------------------------------- */
+
+.rejilla {
+  display: grid;
+  grid-template-columns: repeat(var(--columnas, 5), minmax(0, 1fr));
+  gap: 12px;
+  padding: 4px 20px 20px;
+  align-items: start;
+}
+
+.columna {
+  border: 1px solid var(--borde);
+  border-top: 3px solid var(--acento);
+  border-radius: var(--radio);
+  background: var(--fondo-panel);
+  box-shadow: var(--sombra);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.columna-cabeza {
+  padding: 10px 12px;
+  background: var(--teal-050);
+  border-bottom: 1px solid var(--borde-suave);
+}
+.columna-titulo {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--texto);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.estrellas {
+  font-family: var(--fuente-mono);
+  color: var(--acento);
+  letter-spacing: 1px;
+}
+.patron {
+  font-family: var(--fuente-mono);
+  font-size: 14px;
+  color: var(--texto-tenue);
+  margin-top: 4px;
+  word-break: break-word;
+}
+
+.linea-tiempo {
+  padding: 10px 12px;
+  flex: 1;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.paso {
+  font-size: 14px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  color: var(--texto-suave);
+  padding: 1px 0;
+}
+.marca { font-family: var(--fuente-mono); flex: none; width: 1em; text-align: center; }
+.paso.completado .marca { color: var(--lima-700); }
+.paso.encurso .marca { color: var(--acento); }
+.paso.error { color: var(--error); }
+.paso.error .marca { color: var(--error); }
+.paso.aviso { color: var(--alerta); font-weight: 500; }
+.paso.aviso .marca { color: var(--alerta); }
+.paso.anidado { padding-left: 18px; font-size: 14px; color: var(--texto-tenue); }
+.paso-detalle { font-family: var(--fuente-mono); font-size: 14px; color: var(--texto-tenue); }
+
+/* El pulso de "en curso" respeta prefers-reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .paso.encurso .marca { animation: pulso 1.1s ease-in-out infinite; }
+}
+@keyframes pulso {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.respuesta {
+  padding: 10px 12px;
+  border-top: 1px solid var(--borde-suave);
+  font-size: 16px;
+  color: var(--texto);
+  background: var(--fondo);
+}
+.respuesta:empty { display: none; }
+
+.pie-metricas {
+  padding: 8px 12px;
+  border-top: 1px solid var(--borde-suave);
+  font-family: var(--fuente-mono);
+  font-size: 14px;
+  color: var(--texto-suave);
+  background: var(--fondo-hundido);
+  border-radius: 0 0 var(--radio) var(--radio);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.pie-metricas .cache { color: var(--lima-700); font-weight: 600; }
+.pie-metricas .sin-costo { color: var(--alerta); }
+
+.aviso-alerta {
+  margin: 8px 12px;
+  padding: 8px 10px;
+  border-left: 4px solid var(--alerta);
+  background: rgba(180, 83, 9, 0.08);
+  color: var(--texto);
+  font-size: 14px;
+}
+
+.boton-marcar {
+  font: inherit;
+  font-size: 14px;
+  margin: 0 12px 10px;
+  padding: 5px 10px;
+  border: 1px dashed var(--alerta);
+  border-radius: var(--radio);
+  background: transparent;
+  color: var(--alerta);
+  cursor: pointer;
+  text-align: left;
+}
+
+/* --- JSON crudo ----------------------------------------------------------- */
+
+details.crudo { margin: 2px 0 4px 18px; }
+details.crudo > summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-family: var(--fuente-mono);
+  color: var(--acento);
+}
+pre.json {
+  font-family: var(--fuente-mono);
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--fondo-hundido);
+  border: 1px solid var(--borde-suave);
+  border-radius: var(--radio);
+  padding: 10px;
+  overflow-x: auto;
+  margin: 6px 0;
+  color: var(--texto-suave);
+  white-space: pre;
+}
+pre.json .clave { color: var(--teal-700); font-weight: 600; }
+pre.json .texto { color: var(--texto-suave); }
+pre.json .numero { color: var(--lima-700); font-weight: 600; }
+@media (prefers-color-scheme: dark) {
+  pre.json .clave { color: var(--teal-300); }
+  pre.json .numero { color: #c8e05a; }
+}
+:root[data-tema="oscuro"] pre.json .clave { color: var(--teal-300); }
+:root[data-tema="oscuro"] pre.json .numero { color: #c8e05a; }
+
+/* --- Vista de detalle ---------------------------------------------------- */
+
+.detalle { padding: 16px 20px 32px; display: grid; gap: 16px; }
+.panel {
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--fondo-panel);
+  padding: 14px 16px;
+}
+.panel h2 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--acento);
+}
+.panel h3 { font-size: 14px; margin: 12px 0 4px; }
+
+textarea.prompt {
+  width: 100%;
+  min-height: 190px;
+  font-family: var(--fuente-mono);
+  font-size: 14px;
+  line-height: 1.55;
+  padding: 10px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--fondo);
+  color: var(--texto);
+  resize: vertical;
+}
+
+.lista-tools { display: grid; gap: 10px; }
+.tool {
+  border-left: 3px solid var(--lima-400);
+  padding-left: 10px;
+}
+.tool code {
+  font-family: var(--fuente-mono);
+  font-size: 14px;
+  color: var(--texto);
+  display: block;
+  word-break: break-word;
+}
+.tool p {
+  font-size: 14px;
+  color: var(--texto-suave);
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+}
+
+.tabla-cierre { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tabla-cierre th, .tabla-cierre td {
+  border: 1px solid var(--borde-suave);
+  padding: 6px 10px;
+  text-align: left;
+}
+.tabla-cierre th { background: var(--teal-050); color: var(--texto); font-weight: 600; }
+.tabla-cierre tr.destacada td { background: var(--lima-100); font-weight: 600; }
+:root[data-tema="oscuro"] .tabla-cierre tr.destacada td,
+.tabla-cierre tr.destacada td { color: var(--gris-900); }
+
+.envoltura-tabla { overflow-x: auto; }
+
+/* --- Pie ------------------------------------------------------------------ */
+
+.pie {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px;
+  border-top: 1px solid var(--borde-suave);
+  font-size: 14px;
+  color: var(--texto-tenue);
+}
+.logo-qypher { height: 20px; width: auto; }
+
+/* --- Proyección ----------------------------------------------------------
+   Con zoom al 150% el ancho de viewport efectivo baja a ~950px. Las cinco
+   columnas deben seguir cabiendo: es lo primero que hace un facilitador cuando
+   alguien del fondo dice que no ve. Por eso el layout se aprieta en lugar de
+   apilarse hasta bien abajo. */
+
+@media (max-width: 1100px) {
+  .rejilla { gap: 8px; padding: 4px 10px 20px; }
+  .columna-titulo { font-size: 15px; }
+  .patron { font-size: 14px; }
+  .paso { font-size: 14px; }
+}
+
+@media (max-width: 760px) {
+  .rejilla { grid-template-columns: 1fr; }
+}
+
+/* ==========================================================================
+   MODO PASO A PASO
+   Un nivel a la vez, con su diagrama encendiéndose conforme corre. Es el modo
+   con el que se explica en clase: cinco columnas en paralelo son excelentes
+   para el cierre y un estorbo mientras se explica.
+   ========================================================================== */
+
+.selector-paso {
+  display: flex;
+  gap: 8px;
+  padding: 0 20px 12px;
+  flex-wrap: wrap;
+}
+
+.tarjeta-nivel {
+  font: inherit;
+  flex: 1 1 0;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--borde);
+  border-top: 3px solid var(--gris-300);
+  border-radius: var(--radio);
+  background: var(--fondo-panel);
+  color: var(--texto-suave);
+  cursor: pointer;
+  text-align: left;
+}
+.tarjeta-nivel:hover { border-color: var(--acento); }
+.tarjeta-nivel.activa {
+  border-top-color: var(--acento);
+  background: var(--teal-050);
+  color: var(--texto);
+  box-shadow: var(--sombra);
+}
+.tarjeta-nivel strong { font-size: 16px; }
+.tarjeta-nombre { font-size: 14px; }
+.tarjeta-metricas {
+  font-family: var(--fuente-mono);
+  font-size: 14px;
+  color: var(--lima-700);
+}
+
+.paso-cuerpo { display: grid; gap: 14px; padding: 0 20px 28px; }
+
+.paso-titulo {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.paso-titulo h2 { margin: 0; font-size: 20px; color: var(--texto); }
+.estrellas.grande { font-size: 20px; letter-spacing: 2px; }
+.patron-grande {
+  font-family: var(--fuente-mono);
+  font-size: 15px;
+  color: var(--acento);
+  background: var(--teal-050);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.paso-textos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+}
+.paso-textos h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+.paso-textos p { margin: 0; font-size: 15px; }
+
+/* --- Traza grande -------------------------------------------------------- */
+
+.linea-tiempo.grande { gap: 6px; }
+.bloque-paso { border-bottom: 1px solid var(--borde-suave); padding-bottom: 8px; }
+.bloque-paso:last-child { border-bottom: 0; }
+
+.paso.pensamiento { color: var(--texto-suave); font-style: italic; }
+.paso.delegacion { color: var(--acento); font-weight: 600; }
+
+.pista { font-size: 14px; color: var(--texto-tenue); margin: 2px 0; }
+.pista.sangrada { padding-left: 22px; }
+
+/* La pareja llamada/respuesta de la herramienta, lado a lado: es lo que hay que
+   entender de function calling y se entiende viéndolas juntas. */
+.par-tool {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 12px;
+  margin: 8px 0 4px 22px;
+}
+.par-tool .mitad {
+  border: 1px solid var(--borde-suave);
+  border-radius: var(--radio);
+  padding: 10px;
+  background: var(--fondo-hundido);
+  min-width: 0;
+}
+.par-tool .mitad.ancho-total { grid-column: 1 / -1; }
+.par-tool h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--acento);
+}
+.par-tool details > summary {
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--acento);
+  font-family: var(--fuente-mono);
+}
+pre.json.docstring { white-space: pre-wrap; font-size: 14px; }
+.error-tool { color: var(--error); font-size: 14px; margin: 4px 0 0; }
+
+.respuesta.grande { border: 0; padding: 12px 0 0; }
+.respuesta.grande h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+.respuesta.grande p { margin: 0; font-size: 17px; }
+
+.panel.observa {
+  border-left: 4px solid var(--lima-400);
+  background: var(--teal-050);
+}
+.panel.observa p { margin: 0; font-size: 16px; }
+
+.lista-tools details.tool > summary { cursor: pointer; }
+.lista-tools details.tool > summary code { display: inline; }
+
+.navegacion-paso { display: flex; gap: 10px; flex-wrap: wrap; }
+
+@media (max-width: 900px) {
+  .selector-paso .tarjeta-nivel { min-width: 120px; }
+  .par-tool { margin-left: 0; }
+}
+
+/* ==========================================================================
+   DIAGRAMA SVG ANIMADO
+   La traza ocurriendo sobre el dibujo. Un nodo se enciende cuando le toca, una
+   arista se ilumina cuando algo la recorre, y un paquete etiquetado viaja por
+   ella diciendo qué lleva.
+
+   Regla que gobierna la paleta acá: el estado nunca se comunica SOLO con color.
+   Un nodo pendiente está punteado, uno hecho está sólido y relleno. Los
+   proyectores desaturan.
+   ========================================================================== */
+
+.cabeza-diagrama {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.cabeza-diagrama h2 { margin: 0; }
+.cabeza-diagrama .boton { margin-left: auto; }
+
+.leyenda-diagrama { font-size: 15px; color: var(--texto-suave); margin: 0 0 12px; }
+
+/* Desborda en horizontal antes que encogerse: en un proyector es preferible
+   desplazar que dejar el texto ilegible. */
+.lienzo-diagrama {
+  overflow-x: auto;
+  padding: 4px 0 10px;
+}
+.svg-diagrama { display: block; max-width: none; }
+
+/* --- Aristas -------------------------------------------------------------- */
+
+.arista {
+  fill: none;
+  stroke: var(--gris-300);
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+  transition: stroke 0.25s, stroke-width 0.25s;
+}
+.arista.tenue { stroke-dasharray: 3 7; opacity: 0.5; }
+/* Recorrida: sólida y en lima, como los nodos hechos. */
+.arista.usada {
+  stroke: var(--lima-400);
+  stroke-width: 3;
+  stroke-dasharray: none;
+  opacity: 1;
+}
+.punta-flecha { fill: var(--gris-300); }
+.arista.usada + text,
+.arista.usada { }
+
+.etiqueta-arista {
+  font-family: var(--fuente-mono);
+  font-size: 14px;
+  fill: var(--texto-tenue);
+}
+
+/* --- Nodos ---------------------------------------------------------------- */
+
+.nodo rect {
+  fill: var(--fondo);
+  stroke: var(--borde);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+  transition: stroke 0.25s, fill 0.25s;
+}
+.nodo-etiqueta {
+  font-family: var(--fuente-ui);
+  font-size: 15px;
+  font-weight: 600;
+  fill: var(--texto-suave);
+}
+.nodo-nota {
+  font-family: var(--fuente-ui);
+  font-size: 14px;
+  fill: var(--texto-tenue);
+}
+
+/* Forma según el tipo, además del color */
+.nodo.modelo rect { stroke-dasharray: none; }
+.nodo.decision rect { stroke-dasharray: none; stroke-width: 3; }
+.nodo.tool rect { stroke-dasharray: none; stroke-width: 2; }
+.nodo.agente rect { stroke-dasharray: none; stroke-width: 3; }
+
+/* Estados: pendiente → en curso (teal, latiendo) → hecho (lima) */
+.nodo.activo rect {
+  stroke: var(--bios-teal);
+  stroke-dasharray: none;
+  stroke-width: 3;
+  fill: var(--teal-050);
+}
+.nodo.activo .nodo-etiqueta { fill: var(--teal-700); }
+.nodo.hecho rect {
+  stroke: var(--lima-400);
+  stroke-dasharray: none;
+  fill: var(--lima-100);
+}
+.nodo.hecho .nodo-etiqueta,
+.nodo.hecho .nodo-nota { fill: var(--gris-900); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .nodo.activo rect { animation: latido-nodo 1.2s ease-in-out infinite; }
+}
+@keyframes latido-nodo {
+  0%, 100% { stroke-width: 3; }
+  50% { stroke-width: 5; }
+}
+
+/* --- Paquetes: lo que viaja ---------------------------------------------- */
+
+.paquete rect {
+  stroke-width: 2;
+  fill: var(--fondo-panel);
+}
+.paquete text {
+  font-family: var(--fuente-mono);
+  font-size: 14px;
+  font-weight: 600;
+}
+/* Cuatro cosas distintas viajan por el diagrama y se distinguen a simple vista:
+   la petición, la decisión, la llamada a herramienta y el dato que vuelve. */
+.paquete.peticion rect { stroke: var(--bios-teal); fill: var(--teal-100); }
+.paquete.peticion text { fill: var(--teal-900); }
+.paquete.decision rect { stroke: var(--teal-500); fill: var(--teal-100); }
+.paquete.decision text { fill: var(--teal-900); }
+.paquete.tool rect { stroke: var(--alerta); fill: #fdf0e0; }
+.paquete.tool text { fill: #6b3406; }
+.paquete.resultado rect { stroke: var(--lima-500); fill: var(--lima-100); }
+.paquete.resultado text { fill: var(--gris-900); }
+.paquete.respuesta rect { stroke: var(--exito); fill: #e4f4ec; }
+.paquete.respuesta text { fill: #08432b; }
+
+@media (prefers-color-scheme: dark) {
+  .paquete.tool rect { fill: #3a2408; }
+  .paquete.tool text { fill: #f5c88a; }
+  .paquete.respuesta rect { fill: #0d2c20; }
+  .paquete.respuesta text { fill: #96e0bd; }
+  .paquete.peticion text,
+  .paquete.decision text { fill: #d6edf3; }
+  .paquete.peticion rect,
+  .paquete.decision rect { fill: #123540; }
+}
+:root[data-tema="oscuro"] .paquete.tool rect { fill: #3a2408; }
+:root[data-tema="oscuro"] .paquete.tool text { fill: #f5c88a; }
+:root[data-tema="oscuro"] .paquete.respuesta rect { fill: #0d2c20; }
+:root[data-tema="oscuro"] .paquete.respuesta text { fill: #96e0bd; }
+:root[data-tema="oscuro"] .paquete.peticion text,
+:root[data-tema="oscuro"] .paquete.decision text { fill: #d6edf3; }
+:root[data-tema="oscuro"] .paquete.peticion rect,
+:root[data-tema="oscuro"] .paquete.decision rect { fill: #123540; }
+
+/* --- Insignias: destellos sobre un nodo --------------------------------- */
+
+.insignia rect {
+  fill: var(--alerta);
+  stroke: none;
+}
+.insignia text {
+  font-family: var(--fuente-mono);
+  font-size: 14px;
+  font-weight: 600;
+  fill: #ffffff;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .insignia { animation: aparece-insignia 0.25s ease-out; }
+}
+@keyframes aparece-insignia {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Narración numerada -------------------------------------------------- */
+
+.narracion {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.narracion li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  padding: 5px 11px 5px 5px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--fondo);
+  color: var(--texto-suave);
+}
+.narracion .num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: var(--gris-100);
+  color: var(--gris-900);
+  font-family: var(--fuente-mono);
+  font-weight: 600;
+}
+.narracion li.tool { border-color: var(--alerta); }
+.narracion li.tool .num { background: var(--alerta); color: #ffffff; }
+.narracion li.resultado { border-color: var(--lima-500); }
+.narracion li.resultado .num { background: var(--lima-400); color: var(--gris-900); }
+.narracion li.respuesta { border-color: var(--exito); }
+.narracion li.respuesta .num { background: var(--exito); color: #ffffff; }
+.narracion li.peticion .num,
+.narracion li.decision .num { background: var(--bios-teal); color: #ffffff; }

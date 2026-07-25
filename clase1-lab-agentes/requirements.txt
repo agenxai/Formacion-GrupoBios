@@ -1,0 +1,38 @@
+# =============================================================================
+#  Laboratorio "Niveles de Agencia" — Clase 1 · Grupo Bios / Qypher
+#
+#  Versiones fijadas con == (spec 02): una imagen que se construye distinto la
+#  semana siguiente es un fallo en clase.
+#
+#  Estas versiones no se escribieron de memoria: se resolvieron instalando las
+#  dependencias en un entorno Python 3.12 limpio y anotando lo que quedó.
+#
+#  Si quieres reproducibilidad hasta el último dígito de las dependencias
+#  transitivas, congela el árbol completo desde la imagen ya construida:
+#      docker compose run --rm tablero pip freeze > requirements.lock.txt
+# =============================================================================
+
+# --- Servidor y SSE ----------------------------------------------------------
+fastapi==0.140.0
+uvicorn[standard]==0.51.0
+
+# --- Modelo y agentes --------------------------------------------------------
+langchain-openai==1.4.1
+langchain-core==1.5.1
+langgraph==1.2.9
+# Aquí vive create_react_agent, que es el corazón de N4 y N5: se fija explícito
+# aunque sea transitivo de langgraph.
+langgraph-prebuilt==1.1.0
+# Acceso a la respuesta cruda del modelo en N3 (ADR-002).
+openai==2.48.0
+
+# --- Contratos y configuración ----------------------------------------------
+pydantic==2.13.4
+pydantic-settings==2.14.2
+python-dotenv==1.2.2
+
+# --- Notebook ----------------------------------------------------------------
+jupyterlab==4.6.2
+
+# NO se incluyen bases vectoriales, frameworks de test ni SDKs de
+# observabilidad: pertenecen a las sesiones 2, 5 y 7.
