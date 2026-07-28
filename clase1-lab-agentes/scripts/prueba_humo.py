@@ -216,6 +216,101 @@ def _guion_por_tools(tools) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+#  La vista El caso (spec 11)
+# ---------------------------------------------------------------------------
+
+
+def verificar_caso() -> list[str]:
+    """La vista El caso, sin servidor y sin modelo.
+
+    Lo frágil de esta vista no es el código sino la DESINCRONIZACIÓN: que alguien
+    renombre una tabla y el mapa quede hablando de algo que no existe, o que una
+    tool quede sin ejemplo curado y su tarjeta salga sin «Probar». Todo eso se
+    descubre acá, no proyectando.
+    """
+    from backend import caso
+    from backend.db import conteo_por_tabla
+    from backend.db.descripciones import TABLAS
+    from backend.tools import ejemplos
+    from backend.tools.operaciones import TODAS
+
+    problemas: list[str] = []
+
+    agregado = caso.agregado()
+    tablas_vista = {t["id"] for t in agregado["tablas"]}
+    tablas_base = set(conteo_por_tabla())
+
+    # 1 · El mapa y la base hablan de las mismas tablas, en las dos direcciones.
+    if tablas_vista != tablas_base:
+        problemas.append(
+            f"El mapa muestra {sorted(tablas_vista)} y la base tiene {sorted(tablas_base)}"
+        )
+    sin_describir = tablas_base - set(TABLAS)
+    if sin_describir:
+        problemas.append(f"Tablas sin qué_aporta en descripciones.py: {sorted(sin_describir)}")
+    fantasmas = set(TABLAS) - tablas_base
+    if fantasmas:
+        problemas.append(f"descripciones.py describe tablas que no existen: {sorted(fantasmas)}")
+
+    # 2 · Cada referencia del mapa apunta a una tabla real.
+    for t in agregado["tablas"]:
+        for ref in t["referencias"]:
+            if ref["hacia"] not in tablas_base:
+                problemas.append(f"{t['id']} referencia una tabla inexistente: {ref['hacia']}")
+
+    # 3 · Las 7 tools tienen tarjeta con docstring y al menos un ejemplo.
+    herramientas = {h["nombre"]: h for h in agregado["herramientas"]}
+    for f in TODAS:
+        h = herramientas.get(f.__name__)
+        if h is None:
+            problemas.append(f"La tool {f.__name__} no tiene tarjeta en El caso")
+            continue
+        if not h["docstring"].strip():
+            problemas.append(f"La tool {f.__name__} tiene la docstring vacía")
+        if not h["ejemplos"]:
+            problemas.append(f"La tool {f.__name__} no tiene ningún ejemplo curado")
+
+    # 4 · Todos los «Probar» ejecutan y devuelven estructura, sin excepción.
+    for nombre in herramientas:
+        for i in range(len(ejemplos.ejemplos_de(nombre))):
+            try:
+                r = ejemplos.ejecutar(nombre, i)
+                if not isinstance(r["resultado"], dict):
+                    problemas.append(f"Probar {nombre}[{i}] no devolvió un dict")
+            except Exception as exc:  # noqa: BLE001
+                problemas.append(f"Probar {nombre}[{i}] lanzó: {type(exc).__name__}: {exc}")
+
+    # 5 · El ejemplo de la pregunta insignia trae la cifra con contrato (spec 03).
+    r = ejemplos.ejecutar("consultar_inventario", 0)
+    item = (r["resultado"].get("items") or [{}])[0]
+    if item.get("cantidad_ton") != 320.0:
+        problemas.append(
+            f"El ejemplo de inventario da {item.get('cantidad_ton')} t de maíz; "
+            "el contrato de datos dice 320.0"
+        )
+
+    # 6 · Las preguntas no revelan lo que la clase debe descubrir (spec 11).
+    for p in agregado["preguntas"]:
+        if "nivel_que_la_resuelve" in p:
+            problemas.append(f"La pregunta {p['chip']!r} filtra nivel_que_la_resuelve")
+        if not p.get("cruza"):
+            problemas.append(f"La pregunta {p['chip']!r} no dice qué hay que cruzar")
+        for t in p.get("tablas", []):
+            if t not in tablas_base:
+                problemas.append(f"La pregunta {p['chip']!r} cruza una tabla inexistente: {t}")
+
+    n_probar = sum(len(ejemplos.ejemplos_de(n)) for n in herramientas)
+    if problemas:
+        print(f"  ✕ El caso: {len(problemas)} problema(s) (ver abajo)")
+    else:
+        print(
+            f"  ✓ El caso: {len(tablas_vista)} tablas · {len(herramientas)} tools · "
+            f"{n_probar} «Probar» · 5 preguntas sin respuestas"
+        )
+    return problemas
+
+
+# ---------------------------------------------------------------------------
 #  Ejecución
 # ---------------------------------------------------------------------------
 
@@ -337,6 +432,9 @@ async def principal() -> int:
                 f"consultar_inventario({texto!r}) resolvió a {r.get('planta')!r}: "
                 "inventar una coincidencia rompe la demo de cierre de N4"
             )
+
+    print("\n── La vista El caso (spec 11) ───────────────────────────────")
+    problemas += verificar_caso()
 
     print()
     if problemas:
