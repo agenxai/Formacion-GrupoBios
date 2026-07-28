@@ -1,12 +1,15 @@
 /* ==========================================================================
-   Tablero de Agencia — lógica de vista. Spec 07.
+   Tablero de Agencia — lógica de vista. Spec 07 (vistas) y spec 11 (El caso).
 
-   Tres vistas:
+   Cuatro vistas:
 
+     · caso        El contexto del ejercicio ANTES de los niveles (spec 11):
+                   escenario, mapa de la base, herramientas en vivo, preguntas.
+                   La vista inicial.
      · paso        Un nivel a la vez, con su diagrama encendiéndose conforme
-                   corre. Es el modo con el que se explica en clase, y el
-                   predeterminado: cinco columnas avanzando a la vez son
-                   fantásticas para el cierre y un estorbo para explicar.
+                   corre. Es el modo con el que se explica en clase: cinco
+                   columnas avanzando a la vez son fantásticas para el cierre
+                   y un estorbo para explicar.
      · comparacion Los cinco en paralelo. El momento del minuto 50.
      · detalle     La traza completa y el prompt editable.
 
@@ -20,8 +23,11 @@ function tablero() {
     // Motor del diagrama animado (frontend/diagrama.js): geometría, paquetes que
     // recorren las aristas y repetición sin gastar API.
     ...mezclaDiagrama(),
+    // La vista El caso (frontend/caso.js): mapa de la base, «Probar» y la
+    // transición a N1.
+    ...mezclaCaso(),
 
-    vista: "paso",
+    vista: "caso",
     salud: {},
     gasto: {},
     niveles: [],
@@ -60,6 +66,7 @@ function tablero() {
         fetch("/api/niveles").then((r) => r.json()),
         fetch("/api/preguntas").then((r) => r.json()),
         fetch("/api/prompts").then((r) => r.json()),
+        this.cargarCaso(),
       ]);
       this.niveles = niveles;
       this.preguntas = preguntas.preguntas;

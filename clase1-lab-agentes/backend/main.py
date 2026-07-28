@@ -228,6 +228,18 @@ class Peticion(BaseModel):
     niveles: list[str] = Field(default_factory=lambda: list(ORDEN))
 
 
+class PruebaTool(BaseModel):
+    """El botón «Probar» de la vista El caso (spec 11).
+
+    Pide «el ejemplo N de la tool X»; los argumentos salen del catálogo curado de
+    `tools/ejemplos.py`, nunca del cliente. No hay forma de pasar argumentos
+    arbitrarios — es la lista blanca de siempre aplicada a la demo.
+    """
+
+    herramienta: str
+    ejemplo: int = 0
+
+
 @app.get("/api/salud")
 def salud() -> dict:
     """Estado del laboratorio. Nunca incluye la API key, solo si está presente."""
@@ -270,6 +282,46 @@ def esquema() -> dict:
         "semilla": config.semilla_datos,
         "fecha_referencia": config.fecha_base.isoformat(),
     }
+
+
+# ---------------------------------------------------------------------------
+#  El caso (spec 11): la vista previa a los niveles
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/caso")
+def el_caso() -> dict:
+    """El agregado de la vista El caso: escenario, tablas, herramientas, preguntas.
+
+    Todo se lee de la base y de los módulos de dominio en cada llamada: si la base
+    se regenera, la vista cambia con ella sin tocar una línea.
+    """
+    from backend import caso
+
+    try:
+        return caso.agregado()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(503, f"Base de datos no disponible: {exc}") from exc
+
+
+@app.post("/api/tools/probar")
+def probar_tool(peticion: PruebaTool) -> dict:
+    """Ejecuta un ejemplo curado de una tool, SIN llamar al modelo.
+
+    Los tres invariantes de la spec 11: no pasa por `llm.py` (el gasto queda
+    idéntico), no escribe en la base (hereda la conexión de solo lectura de las
+    tools) y solo ejecuta ejemplos del catálogo curado.
+    """
+    from backend.tools import ejemplos
+
+    try:
+        return ejemplos.ejecutar(peticion.herramienta, peticion.ejemplo)
+    except KeyError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001 — una tool no lanza; si lanzó, es un defecto
+        raise HTTPException(
+            500, f"La herramienta falló: {type(exc).__name__}: {exc}"
+        ) from exc
 
 
 @app.get("/api/prompts")
@@ -456,6 +508,16 @@ def diagrama_js() -> FileResponse:
     return FileResponse(FRONTEND / "diagrama.js", media_type="application/javascript")
 
 
+@app.get("/caso.js")
+def caso_js() -> FileResponse:
+    return FileResponse(FRONTEND / "caso.js", media_type="application/javascript")
+
+
 @app.get("/estilos.css")
 def estilos() -> FileResponse:
     return FileResponse(FRONTEND / "estilos.css", media_type="text/css")
+
+
+@app.get("/caso.css")
+def caso_css() -> FileResponse:
+    return FileResponse(FRONTEND / "caso.css", media_type="text/css")

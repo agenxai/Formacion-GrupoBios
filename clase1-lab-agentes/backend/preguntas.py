@@ -39,6 +39,11 @@ PREGUNTAS: list[dict] = [
             "insignia: N1 la inventa, N2 solo la clasifica, N3 la responde a "
             "medias, N4 la responde bien."
         ),
+        # `cruza` es lo que la vista El caso muestra (spec 11): qué hay que
+        # combinar para responderla. El nivel que la resuelve NO aparece ahí —
+        # esa es la pregunta que la clase entera existe para formular.
+        "cruza": "Inventario contra demanda, convirtiendo unidades de producto a materia prima.",
+        "tablas": ["inventario_planta", "demanda_historica", "formulas"],
     },
     {
         "id": "equipo_en_riesgo",
@@ -50,6 +55,8 @@ PREGUNTAS: list[dict] = [
             "Hay que cruzar la repetición de correctivos con la tendencia del "
             "sensor. Una sola consulta no alcanza para justificar el 'por qué'."
         ),
+        "cruza": "Correctivos repetidos contra la tendencia del sensor de vibración.",
+        "tablas": ["ordenes_mantenimiento", "lecturas_sensor"],
     },
     {
         "id": "donde_esta_mi_pedido",
@@ -64,6 +71,8 @@ PREGUNTAS: list[dict] = [
             "toda pregunta necesita un agente que itere: la interfaz tipo "
             "aeropuerto es un N3 bien hecho."
         ),
+        "cruza": "El pedido contra la cola de camiones del muelle.",
+        "tablas": ["pedidos", "despachos"],
     },
     {
         "id": "pico_de_demanda",
@@ -78,6 +87,8 @@ PREGUNTAS: list[dict] = [
             "Comparar dos series del mismo período. El agente tiene que decidir "
             "qué ventana pedir y luego concluir sobre el día concreto."
         ),
+        "cruza": "La demanda contra la producción del mismo período.",
+        "tablas": ["demanda_historica", "produccion_diaria"],
     },
     {
         "id": "cruzada",
@@ -93,6 +104,8 @@ PREGUNTAS: list[dict] = [
             "las cinco que justifica un supervisor: hay separación real de "
             "dominios y dos contextos que conviene no mezclar."
         ),
+        "cruza": "Abastecimiento y operaciones sobre una misma planta.",
+        "tablas": ["inventario_planta", "equipos", "ordenes_mantenimiento", "pedidos"],
     },
 ]
 

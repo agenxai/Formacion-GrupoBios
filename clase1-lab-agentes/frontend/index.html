@@ -16,18 +16,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Laboratorio · Niveles de Agencia · Grupo Bios</title>
 <link rel="stylesheet" href="/estilos.css" />
+<link rel="stylesheet" href="/caso.css" />
 <link rel="icon" href="/assets/grupo-bios.png" />
 
 <!--
-  EL ORDEN DE ESTOS DOS SCRIPTS IMPORTA Y NO SE PUEDE INVERTIR.
+  EL ORDEN DE ESTOS SCRIPTS IMPORTA Y NO SE PUEDE INVERTIR.
 
   El bundle de Alpine arranca solo en cuanto se ejecuta — no espera a
   DOMContentLoaded. Si se carga antes que `app.js`, recorre el DOM cuando
   `tablero()` todavía no existe: `x-data` falla, Alpine sigue con un objeto vacío
   y el resultado es una página que se ve —porque `x-cloak` sí se quitó— pero donde
-  NINGUNA expresión funciona.
+  NINGUNA expresión funciona. `diagrama.js` y `caso.js` van antes porque app.js
+  los mezcla en el componente.
 -->
 <script defer src="/diagrama.js"></script>
+<script defer src="/caso.js"></script>
 <script defer src="/app.js"></script>
 <script defer src="/assets/vendor/alpine.min.js"></script>
 
@@ -45,6 +48,10 @@
     <h1 class="titulo">Laboratorio · Niveles de Agencia</h1>
 
     <div class="pestanas" role="tablist">
+      <!-- El caso es la vista inicial (spec 11): primero el contexto, después
+           los niveles. -->
+      <button class="pestana" role="tab" :aria-selected="vista === 'caso'"
+              @click="vista = 'caso'">El caso</button>
       <button class="pestana" role="tab" :aria-selected="vista === 'paso'"
               @click="vista = 'paso'">Paso a paso</button>
       <button class="pestana" role="tab" :aria-selected="vista === 'comparacion'"
@@ -88,8 +95,9 @@
     <span x-text="salud.aviso_datos || ''"></span>
   </p>
 
-  <!-- Barra de pregunta, compartida por las dos vistas de ejecución -->
-  <div class="consulta" x-show="vista !== 'detalle'">
+  <!-- Barra de pregunta, solo en las dos vistas de ejecución. El caso no
+       ejecuta nada: es el contexto previo (spec 11). -->
+  <div class="consulta" x-show="vista === 'paso' || vista === 'comparacion'">
     <div class="fila-consulta">
       <input class="entrada" type="text" x-model="pregunta"
              placeholder="Pregunta sobre la operación…"
@@ -114,6 +122,186 @@
       </template>
     </div>
   </div>
+
+  <!-- ==================== VISTA · EL CASO (spec 11) ====================
+       La vista inicial: el contexto del ejercicio ANTES de los niveles.
+       Cuatro bloques — escenario, datos, herramientas, preguntas — y ninguna
+       llamada al modelo en toda la vista. -->
+  <section class="caso" x-show="vista === 'caso'">
+    <p class="pista" x-show="!caso && !casoError">Cargando el caso…</p>
+    <p class="aviso-alerta" x-show="casoError">⚠ <span x-text="casoError"></span></p>
+
+    <template x-if="caso">
+      <div>
+        <!-- ═══════ 1 · El escenario ═══════ -->
+        <div class="panel caso-escenario">
+          <h2 x-text="caso.escenario.titulo"></h2>
+          <p x-text="caso.escenario.texto"></p>
+          <div class="caso-plantas">
+            <template x-for="p in caso.escenario.plantas" :key="p.id">
+              <div class="caso-planta">
+                <strong x-text="p.nombre"></strong>
+                <span x-text="p.municipio"></span>
+                <span class="caso-capacidad" x-text="`${p.capacidad_ton_dia} ton/día`"></span>
+              </div>
+            </template>
+          </div>
+          <p class="caso-aviso">
+            <strong>Datos sintéticos.</strong>
+            <span x-text="caso.aviso_datos"></span>
+            Los municipios son reales; la asignación planta↔municipio es ficticia.
+          </p>
+        </div>
+
+        <!-- ═══════ 2 · Los datos ═══════ -->
+        <div class="panel">
+          <h2>Los datos: once tablas en cuatro dominios</h2>
+          <p class="pista">
+            Cada tabla dice cuántas filas tiene y qué aporta. Las flechas son las
+            llaves foráneas: de qué tabla cuelga cada cosa. Toca una tabla para
+            ver sus columnas y tres filas de ejemplo.
+          </p>
+          <div class="caso-mapa-envoltura" :class="tablaSel ? 'con-panel' : ''">
+            <div class="caso-mapa" x-html="svgMapa()" @click="clicMapa($event)"></div>
+
+            <aside class="caso-panel-tabla" x-show="tablaSel && tabla(tablaSel)">
+              <template x-if="tabla(tablaSel)">
+                <div>
+                  <div class="caso-panel-cabeza">
+                    <h3 x-text="tabla(tablaSel).id"></h3>
+                    <button class="caso-panel-cerrar" @click="tablaSel = null"
+                            aria-label="Cerrar panel">×</button>
+                  </div>
+                  <p class="dominio-linea"
+                     x-text="`${dominio(tabla(tablaSel).dominio).marca} ${dominio(tabla(tablaSel).dominio).nombre} · ${tabla(tablaSel).conteo} filas`"></p>
+                  <p class="aporta" x-text="tabla(tablaSel).que_aporta"></p>
+
+                  <h4>Columnas</h4>
+                  <ul class="caso-columnas">
+                    <template x-for="c in tabla(tablaSel).columnas" :key="c.nombre">
+                      <li x-text="`${c.nombre}: ${c.tipo.toLowerCase()}`"></li>
+                    </template>
+                  </ul>
+
+                  <h4>Cuelga de</h4>
+                  <p class="caso-referencias"
+                     x-show="!tabla(tablaSel).referencias.length">De ninguna tabla: es de las que sostienen a las demás.</p>
+                  <template x-for="r in tabla(tablaSel).referencias" :key="r.desde">
+                    <p class="caso-referencias"
+                       x-text="`→ ${r.hacia}, por ${r.desde}`"></p>
+                  </template>
+
+                  <h4>Tres filas de ejemplo</h4>
+                  <template x-for="(fila, i) in tabla(tablaSel).muestra" :key="i">
+                    <pre class="json" x-html="resaltar(json(fila))"></pre>
+                  </template>
+                </div>
+              </template>
+            </aside>
+          </div>
+
+          <!-- La vía de teclado y de zoom alto: lo mismo que tocar el nodo -->
+          <div class="caso-chips-tablas">
+            <template x-for="t in caso.tablas" :key="t.id">
+              <button class="caso-chip-tabla" :class="{ activa: tablaSel === t.id }"
+                      @click="seleccionarTabla(t.id)" x-text="t.id"></button>
+            </template>
+          </div>
+        </div>
+
+        <!-- ═══════ 3 · Las herramientas ═══════ -->
+        <div class="panel">
+          <h2>Las herramientas: lo que el agente va a poder usar</h2>
+          <p class="caso-sin-agente">
+            <strong>Aquí no hay ningún agente corriendo.</strong>
+            Esto es lo que cada herramienta sabe devolver. En los niveles vas a
+            ver cómo el agente aprende a pedirlas.
+          </p>
+          <p class="pista">
+            El texto que el modelo lee para decidir si usa una herramienta es su
+            docstring: <strong>la docstring es el prompt</strong>. Ábrela en
+            cualquiera de las tarjetas.
+          </p>
+
+          <template x-for="d in dominiosConHerramientas()" :key="d">
+            <div class="caso-grupo-tools">
+              <h3 x-text="`${dominio(d).marca} ${dominio(d).nombre}`"></h3>
+              <p x-text="`Lee las tablas de ${dominio(d).nombre.toLowerCase()}: ${dominio(d).que_responde}`"></p>
+              <div class="caso-tools">
+                <template x-for="h in herramientasDe(d)" :key="h.nombre">
+                  <div class="caso-tool">
+                    <code x-text="h.firma"></code>
+                    <details class="docstring">
+                      <summary>La docstring, tal como la ve el modelo</summary>
+                      <p class="docstring-nota">Esto viaja literalmente en la petición al modelo.</p>
+                      <pre class="json docstring" x-text="h.docstring"></pre>
+                    </details>
+
+                    <template x-for="(e, i) in h.ejemplos" :key="i">
+                      <div class="caso-ejemplo">
+                        <span class="args" x-text="argsTexto(e.argumentos)"></span>
+                        <p class="por-que" x-text="e.por_que"></p>
+                        <button class="boton secundario" @click="probar(h.nombre, i)"
+                                :disabled="prueba(h.nombre, i)?.cargando">
+                          <span x-text="prueba(h.nombre, i)?.cargando ? 'Consultando…' : '▶ Probar'"></span>
+                        </button>
+
+                        <div class="caso-resultado"
+                             x-show="prueba(h.nombre, i) && !prueba(h.nombre, i)?.cargando">
+                          <template x-if="prueba(h.nombre, i)?.resultado">
+                            <div>
+                              <p class="resumen"
+                                 x-text="resumirResultado(prueba(h.nombre, i).resultado)"></p>
+                              <details>
+                                <summary x-text="`ver JSON completo${prueba(h.nombre, i).filas != null ? ' · ' + prueba(h.nombre, i).filas + ' filas' : ''} · ${prueba(h.nombre, i).ms} ms`"></summary>
+                                <pre class="json" x-html="resaltar(json(prueba(h.nombre, i).resultado))"></pre>
+                              </details>
+                            </div>
+                          </template>
+                          <template x-if="prueba(h.nombre, i)?.error">
+                            <p class="error-prueba" x-text="`✕ ${prueba(h.nombre, i).error}`"></p>
+                          </template>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- ═══════ 4 · Las preguntas ═══════ -->
+        <div class="panel">
+          <h2>Las preguntas que hay que responder</h2>
+          <p class="pista">
+            Cada una cruza datos de varias tablas. Las respuestas no están acá:
+            las va a encontrar la clase, nivel por nivel.
+          </p>
+          <div class="caso-preguntas">
+            <template x-for="(p, i) in caso.preguntas" :key="p.chip">
+              <div class="caso-pregunta" :class="{ insignia: i === 0 }">
+                <div class="chip-linea">
+                  <span class="chip-nombre" x-text="p.chip"></span>
+                  <span class="chip-insignia" x-show="i === 0">la pregunta de la clase</span>
+                  <span class="dominio-tag" x-text="p.dominio"></span>
+                </div>
+                <p class="texto" x-text="`«${p.texto}»`"></p>
+                <p class="cruza" x-text="`Hay que cruzar: ${p.cruza}`"></p>
+                <p class="cierre">¿Qué nivel de agente hace falta para responderla? Eso lo decide la clase.</p>
+              </div>
+            </template>
+          </div>
+
+          <div class="caso-transicion">
+            <button class="boton" @click="irAN1()">
+              ¿Cómo responde un LLM a esto? → Nivel 1: el procesador simple
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
+  </section>
 
   <!-- ==================== VISTA · PASO A PASO ==================== -->
   <section x-show="vista === 'paso'">

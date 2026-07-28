@@ -22,6 +22,10 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 CSS = RAIZ / "frontend" / "estilos.css"
+# Los tokens viven en estilos.css; caso.css (spec 11) solo los consume. Pero el
+# mínimo de 14px aplica a TODA la interfaz, así que los tamaños se leen de los
+# dos archivos.
+CSS_TAMANOS = [CSS, RAIZ / "frontend" / "caso.css"]
 
 MARCA_EXACTA = {"--bios-teal": "#00657f", "--bios-lima": "#aacf00"}
 
@@ -170,10 +174,15 @@ def main() -> int:
                 "revisa la regla de la spec 06 en lugar de ignorarla."
             )
 
-    # 4 · Tamaño mínimo de fuente declarado en el CSS
+    # 4 · Tamaño mínimo de fuente declarado en TODOS los CSS del frontend
     print("\nTamaños de fuente declarados")
     tamanos = sorted(
-        {int(m) for m in re.findall(r"font-size:\s*(\d+)px", css)}
+        {
+            int(m)
+            for archivo in CSS_TAMANOS
+            if archivo.exists()
+            for m in re.findall(r"font-size:\s*(\d+)px", archivo.read_text(encoding="utf-8"))
+        }
     )
     print(f"  tamaños en px: {tamanos}")
     menores = [t for t in tamanos if t < 14]

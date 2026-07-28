@@ -1,0 +1,447 @@
+/* ==========================================================================
+   Vista «El caso» — estilos. Spec 11.
+
+   Solo tokens de la paleta de estilos.css (spec 06): ningún color nuevo, ningún
+   texto por debajo de 14px, el lima nunca como color de texto. El lenguaje
+   visual es el de los diagramas de nivel: mismos nodos redondeados, mismas
+   aristas, misma familia de medidas.
+   ========================================================================== */
+
+/* --- Bloque 1 · El escenario --------------------------------------------- */
+
+.caso-escenario p {
+  font-size: 16px;
+  line-height: 1.55;
+  max-width: 1100px;
+}
+
+.caso-plantas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.caso-planta {
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 10px 14px;
+  min-width: 150px;
+  background: var(--fondo-hundido);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.caso-planta strong {
+  font-size: 15px;
+}
+
+.caso-planta span {
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+
+.caso-planta .caso-capacidad {
+  color: var(--acento);
+  font-weight: 600;
+}
+
+.caso-aviso {
+  border-left: 4px solid var(--alerta);
+  background: var(--fondo-hundido);
+  padding: 10px 14px;
+  border-radius: 0 var(--radio) var(--radio) 0;
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+
+/* --- Bloque 2 · El mapa de la base ---------------------------------------- */
+
+.caso-mapa-envoltura {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.caso-mapa-envoltura.con-panel {
+  grid-template-columns: minmax(0, 1fr) 400px;
+}
+
+@media (max-width: 1300px) {
+  .caso-mapa-envoltura.con-panel {
+    grid-template-columns: 1fr; /* el panel baja: el mapa no se encoge */
+  }
+}
+
+.caso-mapa {
+  overflow-x: auto; /* a zoom 150% nada se rompe: se desplaza */
+}
+
+.mapa-base {
+  max-width: none; /* el SVG manda; encogerlo lo haría ilegible */
+}
+
+.banda-dominio {
+  fill: var(--fondo-hundido);
+  stroke: var(--borde-suave);
+  stroke-width: 1;
+}
+
+.banda-etiqueta {
+  font-size: 15px;
+  font-weight: 700;
+  fill: var(--texto);
+  font-family: var(--fuente-ui);
+}
+
+.banda-sub-linea {
+  font-size: 14px;
+  fill: var(--texto-tenue);
+  font-family: var(--fuente-ui);
+}
+
+.arista {
+  fill: none;
+  stroke: var(--gris-500);
+  stroke-width: 1.6;
+}
+
+.arista-punta {
+  fill: var(--gris-500);
+}
+
+.nodo-tabla {
+  cursor: pointer;
+}
+
+.nodo-tabla rect {
+  fill: var(--fondo-panel);
+  stroke: var(--teal-700);
+  stroke-width: 1.6;
+}
+
+.nodo-tabla:hover rect,
+.nodo-tabla.sel rect {
+  fill: var(--teal-050);
+  stroke: var(--teal-500);
+  stroke-width: 2.4;
+}
+
+.nodo-tabla.sel rect {
+  stroke-dasharray: 0;
+}
+
+.nodo-tabla .nt-nombre {
+  font-family: var(--fuente-mono);
+  font-size: 15px;
+  font-weight: 700;
+  fill: var(--texto);
+}
+
+.nodo-tabla .nt-conteo {
+  font-size: 14px;
+  font-weight: 600;
+  fill: var(--teal-700);
+}
+
+:root[data-tema="oscuro"] .nodo-tabla .nt-conteo {
+  fill: var(--teal-300);
+}
+
+.nodo-tabla .nt-aporta {
+  font-size: 14px;
+  fill: var(--texto-suave);
+}
+
+/* Chips de tabla: la vía de teclado y la confirmación de que nada es solo
+   clickeable con mouse (spec 07, accesibilidad). */
+.caso-chips-tablas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.caso-chip-tabla {
+  font: inherit;
+  font-size: 14px;
+  font-family: var(--fuente-mono);
+  border: 1px solid var(--borde);
+  background: var(--fondo-panel);
+  color: var(--texto-suave);
+  border-radius: 999px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+
+.caso-chip-tabla:hover {
+  border-color: var(--acento);
+  color: var(--texto);
+}
+
+.caso-chip-tabla.activa {
+  background: var(--teal-050);
+  border-color: var(--teal-700);
+  color: var(--texto);
+  font-weight: 600;
+}
+
+/* Panel lateral de la tabla seleccionada */
+.caso-panel-tabla {
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--fondo-panel);
+  box-shadow: var(--sombra);
+  padding: 16px;
+}
+
+.caso-panel-tabla h3 {
+  font-family: var(--fuente-mono);
+  font-size: 17px;
+  margin: 0;
+}
+
+.caso-panel-cabeza {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 8px;
+}
+
+.caso-panel-cerrar {
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  border: 1px solid var(--borde);
+  background: var(--fondo-panel);
+  color: var(--texto-suave);
+  border-radius: var(--radio);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.caso-panel-cerrar:hover {
+  color: var(--texto);
+  border-color: var(--acento);
+}
+
+.caso-panel-tabla .dominio-linea {
+  font-size: 14px;
+  color: var(--texto-tenue);
+  margin: 4px 0 8px;
+}
+
+.caso-panel-tabla .aporta {
+  font-size: 15px;
+  color: var(--texto);
+}
+
+.caso-panel-tabla h4 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-tenue);
+  margin: 14px 0 6px;
+}
+
+.caso-columnas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-family: var(--fuente-mono);
+  font-size: 14px;
+  color: var(--texto-suave);
+  columns: 2;
+}
+
+.caso-columnas li {
+  padding: 1px 0;
+}
+
+.caso-referencias {
+  font-size: 14px;
+  color: var(--texto-suave);
+  margin: 0;
+}
+
+/* --- Bloque 3 · Las herramientas ------------------------------------------- */
+
+.caso-sin-agente {
+  background: var(--teal-050);
+  border-left: 4px solid var(--teal-700);
+  padding: 10px 14px;
+  border-radius: 0 var(--radio) var(--radio) 0;
+  font-size: 15px;
+}
+
+.caso-grupo-tools {
+  margin-top: 18px;
+}
+
+.caso-grupo-tools > h3 {
+  font-size: 16px;
+  margin: 0 0 4px;
+}
+
+.caso-grupo-tools > p {
+  font-size: 14px;
+  color: var(--texto-tenue);
+  margin: 0 0 10px;
+}
+
+.caso-tools {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(430px, 1fr));
+  gap: 14px;
+}
+
+.caso-tool {
+  border: 1px solid var(--borde);
+  border-left: 4px solid var(--teal-700);
+  border-radius: var(--radio);
+  background: var(--fondo-panel);
+  padding: 14px 16px;
+}
+
+.caso-tool > code {
+  font-family: var(--fuente-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--texto);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.caso-tool details.docstring summary {
+  font-size: 14px;
+  color: var(--acento);
+  cursor: pointer;
+}
+
+.caso-tool .docstring-nota {
+  font-size: 14px;
+  color: var(--texto-tenue);
+  margin: 6px 0;
+}
+
+.caso-ejemplo {
+  margin-top: 12px;
+  border-top: 1px dashed var(--borde);
+  padding-top: 10px;
+}
+
+.caso-ejemplo .args {
+  font-family: var(--fuente-mono);
+  font-size: 14px;
+  background: var(--fondo-hundido);
+  border-radius: var(--radio);
+  padding: 6px 10px;
+  display: block;
+  overflow-x: auto;
+}
+
+.caso-ejemplo .por-que {
+  font-size: 14px;
+  color: var(--texto-suave);
+  margin: 6px 0 8px;
+}
+
+.caso-resultado {
+  margin-top: 10px;
+}
+
+.caso-resultado .resumen {
+  font-size: 14px;
+  color: var(--texto);
+  margin: 0 0 6px;
+}
+
+.caso-resultado .error-prueba {
+  font-size: 14px;
+  color: var(--error);
+}
+
+/* --- Bloque 4 · Las preguntas ---------------------------------------------- */
+
+.caso-preguntas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.caso-pregunta {
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--fondo-panel);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.caso-pregunta.insignia {
+  border-color: var(--teal-700);
+  box-shadow: var(--sombra);
+}
+
+.caso-pregunta .chip-linea {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px;
+}
+
+.caso-pregunta .chip-nombre {
+  background: var(--teal-050);
+  color: var(--teal-800);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-weight: 700;
+}
+
+:root[data-tema="oscuro"] .caso-pregunta .chip-nombre {
+  color: var(--teal-300);
+}
+
+.caso-pregunta .chip-insignia {
+  background: var(--lima-400);
+  color: var(--gris-900);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-weight: 700;
+}
+
+.caso-pregunta .dominio-tag {
+  color: var(--texto-tenue);
+}
+
+.caso-pregunta .texto {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.caso-pregunta .cruza {
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+
+.caso-pregunta .cierre {
+  font-size: 14px;
+  color: var(--texto-tenue);
+  font-style: italic;
+  margin-top: auto;
+}
+
+.caso-transicion {
+  margin-top: 22px;
+  text-align: center;
+}
+
+.caso-transicion .boton {
+  font-size: 17px;
+  padding: 14px 26px;
+}

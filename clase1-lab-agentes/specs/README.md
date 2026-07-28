@@ -2,7 +2,8 @@
 
 **Cliente:** Grupo Bios · **Programa:** Qypher — Formación en IA y Agentes
 **Sesión:** 1 — Agentes y Arquitecturas Multiagénticas
-**Estado:** `v1.0` — **implementado**. Ver [`../README.md`](../README.md) para ejecutarlo.
+**Estado:** `v1.0` — **implementado**, salvo la spec [11](./11-contexto-caso.md)
+(**pendiente de implementar**). Ver [`../README.md`](../README.md) para ejecutarlo.
 
 Las specs se escribieron completas antes del código y se corrigieron **después**, allí
 donde la implementación demostró que estaban equivocadas. Cada una de esas correcciones
@@ -52,6 +53,7 @@ notebook los *reconstruye*.
 | [08](./08-notebook.md) | Notebook | Estructura de celdas, retos, auto-verificación |
 | [09](./09-operacion-riesgos.md) | Operación y riesgos | API key compartida, costos, seguridad, plan B |
 | [10](./10-guion-facilitador.md) | Guion del facilitador | Minuto a minuto de los 55 min: qué proyectas, qué dices, dónde cortas |
+| [11](./11-contexto-caso.md) | Contexto del caso | La vista previa a los niveles: escenario, datos, herramientas en vivo y preguntas — **pendiente de implementar** |
 
 Además, fuera de este directorio:
 
