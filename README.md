@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./frontend/assets/grupo-bios.png" alt="Grupo Bios" width="260">
+  <img src="clase1-lab-agentes/frontend/assets/grupo-bios.png" alt="Grupo Bios" width="260">
 </p>
 
 <h1 align="center">Laboratorio · Niveles de Agencia</h1>
@@ -242,7 +242,8 @@ está leyendo — ve a la sección 10.
 ### b) El tablero se ve
 
 Abre **http://localhost:8000**. Debes ver el logo de Grupo Bios arriba a la izquierda,
-el indicador `● vivo` a la derecha, y cinco columnas vacías (N1 a N5).
+el indicador `● vivo` a la derecha, y la vista **El caso** con el escenario, el mapa
+de las once tablas y las herramientas con su botón ▶ Probar.
 
 ### c) El notebook está listo
 
@@ -270,14 +271,38 @@ haber corrido antes de la clase (sección 13).
 No es un chat: es un instrumento para ver el interior de un agente. El resultado es lo
 menos interesante; lo que enseña es el proceso.
 
-Hay **tres vistas**, y la elección importa: la que mejor cierra la sesión es la peor
+Hay **cuatro vistas**, y la elección importa: la que mejor cierra la sesión es la peor
 para explicarla.
 
 | Vista | Para qué | Cuándo |
 |---|---|---|
-| **Paso a paso** *(predeterminada)* | Un nivel a la vez, con su diagrama de arquitectura encendiéndose conforme corre | Mientras explicas cada nivel |
+| **El caso** *(predeterminada)* | El contexto del ejercicio: el escenario, el mapa de la base, las herramientas en vivo y las preguntas | Antes de empezar los niveles; referencia durante la clase |
+| **Paso a paso** | Un nivel a la vez, con su diagrama de arquitectura encendiéndose conforme corre | Mientras explicas cada nivel |
 | **Comparación** | Los cinco en paralelo + tabla de cierre | El cierre |
 | **Detalle** | Traza completa y system prompt editable | Cuando alguien pregunta «¿y si…?» |
+
+### Vista El caso — el contexto antes de los niveles
+
+El tablero abre aquí, a propósito: antes de ver al agente *usar* las herramientas,
+hay que haberlas visto. Cuatro bloques, y **ninguna llamada al modelo** en toda la
+vista:
+
+1. **El escenario** — la ficción del laboratorio: cinco plantas, cuatro dominios,
+   y las preguntas que nadie responde rápido.
+2. **Los datos** — un mapa de las once tablas agrupadas por dominio, con su conteo
+   real de filas, una línea de qué aporta cada una y las llaves foráneas como
+   flechas. Toca una tabla (o su chip) y verás sus columnas y tres filas de
+   ejemplo.
+3. **Las herramientas** — las siete tools con su docstring tal como la ve el
+   modelo y un botón **▶ Probar** que las ejecuta en vivo contra la base, sin
+   agente y con costo $0. El rótulo lo dice: *«aquí no hay ningún agente
+   corriendo»*.
+4. **Las preguntas** — las cinco preguntas de negocio con lo que hay que cruzar
+   para responderlas, sin las respuestas. Cierra con el botón de transición:
+   *«¿Cómo responde un LLM a esto? → Nivel 1»*.
+
+La regla de la vista: **muestra datos, nunca conclusiones**. Las anomalías las
+descubre la clase con los niveles, no esta pantalla.
 
 ### Vista Paso a paso — la que se usa para explicar
 
@@ -353,12 +378,10 @@ Elige un nivel y verás:
 
 **http://localhost:8888** — Jupyter abre directamente en el primero.
 
-Hay **dos**, y no son alternativas: son dos momentos distintos de la clase.
 
 | | Para qué | Cómo se usa |
 |---|---|---|
 | **`1-los-cinco-niveles-explicado.ipynb`** | **Entender** el código de cada nivel | Se lee y se corre mientras el facilitador explica. Todo funciona; no hay nada que completar. |
-| **`2-los-cinco-niveles-taller.ipynb`** | **Construirlos** tú | Andamiaje con 13 `# TODO` y `assert` que te dicen si quedó bien. |
 
 ### 1 · El notebook explicado
 
@@ -742,17 +765,23 @@ clase1-lab-agentes/
 │   ├── main.py                  FastAPI: rutas y streaming SSE
 │   ├── config.py                variables de entorno, validadas
 │   ├── eventos.py               el contrato de eventos
+│   ├── caso.py                  el agregado de la vista El caso (spec 11)
 │   ├── llm.py                   cliente + reintentos + caché + contador de gasto
 │   ├── prompts.py               system prompts, editables en caliente
 │   ├── db/seed.py               generador de datos sintéticos
+│   ├── db/descripciones.py      qué aporta cada tabla, en lenguaje de negocio
 │   ├── tools/operaciones.py     las 7 herramientas de dominio
+│   ├── tools/ejemplos.py        ejemplos curados del botón «Probar»
 │   ├── niveles/n1..n5           un módulo por nivel de agencia
 │   └── replay/trazas.json       trazas pregrabadas (plan B)
 │
 ├── frontend/
 │   ├── index.html               el tablero (sin build step)
 │   ├── app.js
+│   ├── caso.js                  la vista El caso: mapa de la base y «Probar»
+│   ├── diagrama.js              el diagrama animado de los niveles
 │   ├── estilos.css
+│   ├── caso.css
 │   └── assets/                  logos y dependencias vendorizadas
 │
 ├── notebook/
@@ -785,6 +814,9 @@ van 25 de los 55 minutos de práctica.
 - [ ] `.env` creado a partir de `.env.example`, con la API key pegada
 - [ ] `docker compose up --build` termina sin errores
 - [ ] `http://localhost:8000` muestra el tablero con `● vivo`
+- [ ] **Pestaña El caso recorrida**: el escenario, el mapa de las tablas y un
+      ▶ Probar ejecutado (llegar sabiendo qué es `inventario_planta` es la
+      diferencia entre seguir N3 y mirarlo pasar)
 - [ ] `http://localhost:8888` abre el notebook
 - [ ] **Sección 0 del notebook ejecutada, con todos los `✓` en verde**
 - [ ] Una pregunta precargada ejecutada en N3 desde el tablero, con respuesta

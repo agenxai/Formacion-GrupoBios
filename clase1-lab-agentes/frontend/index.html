@@ -241,8 +241,12 @@
                       <div class="caso-ejemplo">
                         <span class="args" x-text="argsTexto(e.argumentos)"></span>
                         <p class="por-que" x-text="e.por_que"></p>
+                        <!-- El !! no es decoración: Alpine 3.15 trata :disabled
+                             que evalúa a `undefined` como verdadero (lo evalúa a
+                             falso solo si es null/false explícito). Sin él, los
+                             botones nacen deshabilitados. -->
                         <button class="boton secundario" @click="probar(h.nombre, i)"
-                                :disabled="prueba(h.nombre, i)?.cargando">
+                                :disabled="!!prueba(h.nombre, i)?.cargando">
                           <span x-text="prueba(h.nombre, i)?.cargando ? 'Consultando…' : '▶ Probar'"></span>
                         </button>
 
