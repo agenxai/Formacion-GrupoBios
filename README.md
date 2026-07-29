@@ -40,7 +40,6 @@ la cruza con otro dominio.
 |---|---|---|---|
 | **Tablero de Agencia** | App web que ejecuta los 5 niveles en paralelo y muestra sus trazas | `localhost:8000` | Ver por dentro qué hace cada nivel |
 | **Notebook explicado** | Los 5 niveles en Python plano, sin abstracciones | `localhost:8888` | Leer el código y entenderlo |
-| **Notebook taller** | Los mismos 5 niveles con `# TODO` | `localhost:8888` | Escribirlo con tus manos |
 
 > **Aviso sobre los datos.** Todo el contenido de `bios_ops.db` es **sintético**,
 > generado por script. Los nombres de plantas, productos, equipos y clientes son
