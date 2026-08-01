@@ -284,7 +284,29 @@ es la salvaguarda más barata.
 
 ---
 
-## 10 · Siguiente paso
+## 10 · El mismo agente en n8n (Parte 2)
+
+La Parte 2 vive en la instancia n8n cloud de Bios — el workflow ya está
+importado (si tu equipo no lo ve, preguntale al facilitador). Los detalles de
+montaje están en `n8n/README.md`. Lo que importa acá es la equivalencia: **es
+el mismo agente**, pieza por pieza:
+
+| Concepto | Python (Parte 1a/1b) | n8n (Parte 2) |
+|---|---|---|
+| Cerebro (LLM) | `AzureChatOpenAI` en `cliente.py` | Nodo *Azure OpenAI Chat Model* |
+| Herramientas | funciones en `tools.py` + `TOOLS_FUNC` | Nodos *Tool* conectados al *AI Agent* |
+| Prompt de cada tool | la docstring de la función | campo *Description* del nodo Tool |
+| Schema de parámetros | JSON en `SCHEMAS` | *Placeholders* del nodo Tool |
+| Memoria | `Memoria` (lista de mensajes) | Nodo *Window Buffer Memory* |
+| Loop ReAct | `loop.py` (1a) / `create_react_agent` (1b) | El nodo *AI Agent* lo hace internamente |
+| Interfaz | `chat.py` (bucle de `input()`) | El *Chat Trigger* es la interfaz |
+
+El agente es el mismo. Lo que cambia es el medio. Si lo entendés en uno, lo
+entendés en el otro.
+
+---
+
+## 11 · Siguiente paso
 
 Llevate el repo a tu equipo. Cuando quieras empezar a adaptar las tools a tu
 proyecto real de Bios (mantenimiento, compras, logística o producción),

@@ -57,7 +57,7 @@ se cumplen TODOS:
   impresa es el system prompt del agente y la lista de tools disponibles.
 - [ ] **CA-1.2 Tool única (turno 1).** Ante la pregunta "¿cuánto maíz le queda a la
   planta de Itagüí?", el loop imprime `[Action] consultar_inventario(...)` y
-  devuelve la cifra correcta (318 toneladas, bajo mínimo).
+  devuelve la cifra correcta (320 toneladas, bajo mínimo de 1.190).
 - [ ] **CA-1.3 Encadenamiento (turno 2).** Ante "¿y me alcanza para la demanda
   proyectada de esta semana?", el loop imprime `[Action] consultar_demanda(...)`
   basándose en el contexto de memoria ("esa planta, maíz"), compara y concluye que
