@@ -1,0 +1,18 @@
+# Dependencias de la clase 2 · fijadas con == para builds reproducibles.
+# Sin Docker: se instalan en un venv con `pip install -r requirements.txt`.
+# Versiones probadas conjuntas (verificación en /tmp antes de la clase).
+
+langchain-openai==1.4.1
+langchain-core==1.5.3
+langgraph==1.2.10
+openai==2.52.0
+python-dotenv==1.2.2
+
+# Notas:
+# - `langchain` completo NO es necesario; con `langchain-core` + `langchain-openai`
+#   cubrimos el cliente (AzureChatOpenAI) y la definición de tools.
+# - `langgraph` trae `create_react_agent` de `langgraph.prebuilt` (Parte 1b) y el
+#   `CompiledStateGraph` que devuelve.
+# - `openai` es dependencia subyacente de langchain-openai; se fija por seguridad.
+# - Si actualizás alguna, corre primero el checklist de la spec 07 (correr la
+#   conversación insignia 24-48h antes).
