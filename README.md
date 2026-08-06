@@ -40,7 +40,6 @@ la cruza con otro dominio.
 |---|---|---|---|
 | **Tablero de Agencia** | App web que ejecuta los 5 niveles en paralelo y muestra sus trazas | `localhost:8000` | Ver por dentro qué hace cada nivel |
 | **Notebook explicado** | Los 5 niveles en Python plano, sin abstracciones | `localhost:8888` | Leer el código y entenderlo |
-| **Notebook taller** | Los mismos 5 niveles con `# TODO` | `localhost:8888` | Escribirlo con tus manos |
 
 > **Aviso sobre los datos.** Todo el contenido de `bios_ops.db` es **sintético**,
 > generado por script. Los nombres de plantas, productos, equipos y clientes son
@@ -100,6 +99,25 @@ está corriendo. Ábrelo y espera a que el icono deje de animarse.
 
 > **Nota para Apple Silicon (M1/M2/M3/M4):** funciona sin configuración extra. Las
 > imágenes se construyen para `arm64` nativamente.
+
+> **Nota para Linux (sin Docker Desktop):** si al correr `docker` te sale
+> *«permission denied while trying to connect to the docker API at
+> unix:///var/run/docker.sock»*, es porque tu usuario no pertenece al grupo `docker`
+> (o acabas de agregarte y la sesión aún no lo sabe). Es lo esperado en una
+> instalación nueva de Docker Engine (Fedora, Ubuntu, etc.):
+>
+> ```bash
+> sudo usermod -aG docker $USER   # agregarte al grupo (una sola vez)
+> newgrp docker                   # activar el grupo en esta terminal, sin relogin
+> ```
+>
+> Linux asigna los grupos al iniciar sesión, así que la membresía nueva **no aplica
+> a las terminales ya abiertas**. `newgrp docker` lo resuelve para la terminal
+> actual; cerrar sesión y volver a entrar lo deja permanente para todas.
+>
+> ⚠ Pertenecer al grupo `docker` equivale a acceso root en la máquina (el daemon
+> corre como root). En tu equipo personal de laboratorio está bien; en un servidor
+> compartido, consúltalo antes con quien lo administra.
 
 **Espacio en disco:** ~1.5 GB para las imágenes.
 
@@ -636,6 +654,7 @@ docker compose exec tablero python -m backend.db.seed --recrear
 | Síntoma | Causa | Solución |
 |---|---|---|
 | `Cannot connect to the Docker daemon` | Docker Desktop no está corriendo | Ábrelo y espera a que el icono se estabilice |
+| `permission denied ... docker API at unix:///var/run/docker.sock` (Linux) | Tu usuario no está en el grupo `docker`, o te agregaste pero la sesión no lo ha tomado | `sudo usermod -aG docker $USER` y luego `newgrp docker` en esa terminal (o cierra sesión y vuelve a entrar). Ver la nota para Linux de la sección 1 |
 | `docker: 'compose' is not a docker command` | Docker muy antiguo o falta el plugin | Actualiza a Docker 24+. En Linux: `sudo apt install docker-compose-plugin` |
 | `port is already allocated` | Otro proceso usa el 8000 o el 8888 | Averigua quién con `docker ps` (suele ser otro contenedor tuyo) y detenlo con `docker stop <nombre>`, **o** cambia `PUERTO_TABLERO` / `PUERTO_NOTEBOOK` en `.env` |
 | Liberaste el puerto pero `localhost:8000` sigue sin responder | El contenedor se **creó** cuando el puerto estaba ocupado, así que quedó sin mapeo. `docker compose up` lo reinicia pero no lo recrea | `docker compose up -d --force-recreate tablero`. Para comprobarlo: `docker inspect clase1-tablero --format '{{json .NetworkSettings.Ports}}'` — si sale `{"8000/tcp":[]}`, el mapeo está vacío |
