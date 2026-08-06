@@ -1,8 +1,14 @@
-"""El cerebro del agente: configuración del cliente Azure OpenAI.
+"""El cerebro del agente: configuración del cliente Azure AI Foundry.
 
-Spec 02 · ADR-001. Bios usa Azure OpenAI como puerta corporativa a los modelos. Lo
-que se ve en clase es lo que van a usar en sus proyectos: no se mezcla con OpenAI
+Spec 02 · ADR-001. Bios usa Azure AI Foundry como puerta corporativa a los modelos.
+Lo que se ve en clase es lo que van a usar en sus proyectos: no se mezcla con OpenAI
 directo.
+
+El endpoint de Foundry (`*.services.ai.azure.com/openai/v1`) es compatible con la
+API de OpenAI, así que lo consumimos con `ChatOpenAI` apuntando `base_url` al
+endpoint y usando el nombre del *deployment* como `model`. Es el mismo contrato que
+`AzureChatOpenAI` (mensajes en/out, tool_calls, bind_tools), solo que por la ruta
+de Foundry en vez de la del Azure OpenAI clásico.
 
 Uso:
     from cliente import cliente
@@ -19,7 +25,7 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from langchain_openai import AzureChatOpenAI
+from langchain_openai import ChatOpenAI
 
 # Carga el .env del directorio del proyecto (sube dos niveles desde este archivo).
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
@@ -34,14 +40,14 @@ if _faltan:
         + ". Copia .env.example a .env y complétalas."
     )
 
-cliente = AzureChatOpenAI(
-    azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+cliente = ChatOpenAI(
+    base_url=os.environ["AZURE_OPENAI_ENDPOINT"],
     api_key=os.environ["AZURE_OPENAI_API_KEY"],
-    azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT"],
-    api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-10-21"),
+    model=os.environ["AZURE_OPENAI_DEPLOYMENT"],
     temperature=0.2,
 )
-"""El cerebro. Una instancia de AzureChatOpenAI lista para que el loop la llame.
+"""El cerebro. Una instancia de ChatOpenAI contra el endpoint de Foundry de Bios,
+lista para que el loop la llame.
 
 `temperature=0.2` reduce el riesgo de invención de cifras operativas — la clase 1
 ya mostró que un LLM sin datos inventa con seguridad; aquí queremos que razonne,

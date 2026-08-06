@@ -1,11 +1,6 @@
 # Secrets
 .env
 
-# Base de datos sintética — se copia desde la clase 1, no se versiona.
-bios_ops.db
-agente-transparente/bios_ops.db
-agente-framework/bios_ops.db
-
 # Python
 __pycache__/
 *.py[cod]
