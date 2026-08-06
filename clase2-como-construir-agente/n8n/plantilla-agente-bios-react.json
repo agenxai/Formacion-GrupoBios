@@ -1,0 +1,275 @@
+{
+  "name": "Agente Bios ReAct — Clase 2",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c2-trigger-chat",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 0],
+      "webhookId": "agente-bios-clase2"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Eres un asistente de operaciones de Grupo Bios. Tu trabajo es responder preguntas de negocio sobre inventario, demanda, logística y mantenimiento usando las herramientas que se te dan.\n\nREGLAS:\n- NUNCA inventes una cifra operativa. Si una herramienta no te da el dato, di \"no tengo esa información\" y explica qué herramienta se necesitaría.\n- Usa las herramientas SIEMPRE que la pregunta requiera un dato del negocio. No respondas con conocimiento general.\n- Si la pregunta es ambigua, pide aclaración.\n- Responde en español, con unidades (toneladas, días, COP).\n- Eres exacto. No redondees sin decirlo.\n\nNota: los datos de bios_ops.db son SINTÉTICOS; no representan datos reales de Grupo Bios."
+        }
+      },
+      "id": "c2-ai-agent",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [280, 0]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "id": "c2-modelo-azure",
+      "name": "Azure OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [80, 240],
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "REEMPLAZAR_EN_IMPORT",
+          "name": "Azure OpenAI de Bios (registrada por TI — no se exporta)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "bios-clase2",
+        "contextWindowLength": 10
+      },
+      "id": "c2-memoria-ventana",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [280, 240]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Consulta el inventario de materias primas de una planta al último corte. Devuelve, por cada materia prima, la cantidad disponible en toneladas, el stock mínimo definido para esa planta y si está por debajo de ese mínimo. Usa esta herramienta para saber CUÁNTO HAY de una materia prima. Para saber cuánto se NECESITA en un período, usa consultar_demanda indicando la misma materia prima.",
+        "method": "POST",
+        "url": "http://HOST-SERVICIO-TOOLS:8788/tools/consultar_inventario",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"planta\": \"{planta}\",\n  \"materia_prima\": \"{materia_prima}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "planta",
+              "description": "Nombre, municipio o código de la planta. Acepta 'Itagüí', 'Planta Itagüí' o 'PL-ITG'.",
+              "type": "string"
+            },
+            {
+              "name": "materia_prima",
+              "description": "Opcional. Nombre o código de una materia prima concreta, por ejemplo 'maíz' o 'MP-MAIZ'. Deja cadena vacía para devolver todas.",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "c2-tool-inventario",
+      "name": "consultar_inventario",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [480, 240]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Consulta la demanda de producto de una planta en los últimos días. Devuelve el total en toneladas del período y la serie por día. La demanda es HISTÓRICA (los últimos N días registrados) y se usa como referencia de lo que se espera para un período equivalente. IMPORTANTE — unidades: el total viene en toneladas de PRODUCTO TERMINADO. Si necesitas compararlo contra el inventario de una materia prima, pasa el parámetro materia_prima: la herramienta convierte la demanda a toneladas de esa materia prima usando su participación en la fórmula de cada producto, y devuelve el resultado en requerimiento_materia_prima. No hagas esa conversión por tu cuenta.",
+        "method": "POST",
+        "url": "http://HOST-SERVICIO-TOOLS:8788/tools/consultar_demanda",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"planta\": \"{planta}\",\n  \"materia_prima\": \"{materia_prima}\",\n  \"dias\": {dias}\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "planta",
+              "description": "Nombre, municipio o código de la planta.",
+              "type": "string"
+            },
+            {
+              "name": "materia_prima",
+              "description": "Opcional. Si se indica, añade cuántas toneladas de esa materia prima requiere la demanda del período, según fórmula. Deja cadena vacía si no aplica.",
+              "type": "string"
+            },
+            {
+              "name": "dias",
+              "description": "Cuántos días hacia atrás incluir. Usa 7 para una semana.",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "c2-tool-demanda",
+      "name": "consultar_demanda",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [640, 240]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Consulta el estado y avance de un pedido por su número. Devuelve el estado actual, cuántos pasos le faltan hasta 'entregado' y, si está en muelle, qué turno de cargue tiene asignado. Es la base de la interfaz tipo aeropuerto: el cliente pregunta y obtiene dónde está su pedido.",
+        "method": "POST",
+        "url": "http://HOST-SERVICIO-TOOLS:8788/tools/estado_pedido",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"pedido_id\": \"{pedido_id}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "pedido_id",
+              "description": "Número del pedido. Formato 'PD-24-XXXXX'.",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "c2-tool-pedido",
+      "name": "estado_pedido",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [800, 240]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Consulta el historial de fallas y el estado de los equipos de una planta. Devuelve las órdenes de mantenimiento del período, con tipo (correctivo, preventivo, predictivo), causa, horas de paro y costo. Incluye el MTBF (tiempo medio entre fallas) y el equipo con más correctivos del período. Para detectar un equipo en riesgo, mira la REPETICIÓN de correctivos con la misma causa en poco tiempo.",
+        "method": "POST",
+        "url": "http://HOST-SERVICIO-TOOLS:8788/tools/historial_fallas",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"planta\": \"{planta}\",\n  \"dias\": {dias}\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "planta",
+              "description": "Nombre, municipio o código de la planta.",
+              "type": "string"
+            },
+            {
+              "name": "dias",
+              "description": "Ventana hacia atrás en días. Usa 30 por defecto.",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "c2-tool-fallas",
+      "name": "historial_fallas",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [960, 240]
+    },
+    {
+      "parameters": {
+        "content": "## Agente Bios ReAct — Clase 2\n\nEl MISMO agente de las Partes 1a/1b, en forma visual.\n\n**Equivalencias:**\n- *AI Agent* = el loop ReAct (`loop.py` / `create_react_agent`)\n- *Azure OpenAI Chat Model* = el cerebro (`cliente.py`)\n- *Window Buffer Memory* = la memoria (`memoria.py`, sessionId `bios-clase2`, ventana 10)\n- Nodos *Tool* = los brazos (`tools.py`); la Description es la docstring\n- *Chat Trigger* = la interfaz (`chat.py`)\n\n**Antes de ejecutar:**\n1. Seleccionar la credencial Azure OpenAI registrada por TI.\n2. Reemplazar `HOST-SERVICIO-TOOLS:8788` en las 4 tools por la URL real de `n8n/servicio_tools.py`.\n\n⚠️ Datos SINTÉTICOS — bios_ops.db no representa datos reales de Grupo Bios.",
+        "height": 420,
+        "width": 380,
+        "color": 4
+      },
+      "id": "c2-nota",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-460, -40]
+    }
+  ],
+  "connections": {
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_inventario": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_demanda": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "estado_pedido": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "historial_fallas": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

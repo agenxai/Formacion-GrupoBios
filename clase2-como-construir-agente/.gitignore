@@ -1,0 +1,16 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.ipynb_checkpoints/
+
+# SO
+.DS_Store
+Thumbs.db
+
+# Caché de respuestas (si se agrega más adelante)
+.cache_llm/
