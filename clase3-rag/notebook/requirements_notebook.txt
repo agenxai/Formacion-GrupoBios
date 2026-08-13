@@ -1,0 +1,10 @@
+# Dependencias del notebook de casa (espejo del de S2 + Chroma).
+# Ver spec 06 § "Prerrequisitos".
+langchain==0.3.14
+langchain-openai==0.2.14
+langchain-chroma==0.1.4
+langchain-core>=0.3.29
+chromadb==0.5.23
+openai==1.59.7
+python-dotenv==1.0.1
+jupyterlab==4.3.4

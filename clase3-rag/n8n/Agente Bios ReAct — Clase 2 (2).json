@@ -1,0 +1,452 @@
+{
+  "name": "Agente Bios ReAct — Clase 2",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=Eres un asistente de operaciones de Grupo Bios. Respondes sobre inventario, demanda, logística, mantenimiento y las políticas internas que rigen esas áreas, usando ÚNICAMENTE tus herramientas.\n\nTUS HERRAMIENTAS — dos familias:\n\nA) DATOS OPERATIVOS — cifras del sistema, el \"cómo está hoy\":\n   consultar_inventario · consultar_demanda · estado_pedido · historial_fallas\n\nB) CONOCIMIENTO DOCUMENTAL — manuales y políticas, el \"cómo debería ser\":\n   rag_openai. Recibe:\n   - consulta: reformula con el vocabulario del documento, no con las palabras\n     del usuario. \"¿cada cuánto reviso el molino?\" → \"periodicidad inspección\n     molino criticidad alta\".\n   - dominios: mant (Mantenimiento), comp (Compras), logi (Logística),\n     prod (Producción/TD). Separados por coma si cruza áreas (\"logi,prod\").\n     Si dudas, incluye los cuatro.\n\nREGLA DE DOBLE CONSULTA — OBLIGATORIA:\nToda pregunta de negocio se responde consultando LAS DOS FAMILIAS antes de\ncontestar. Nunca respondas con una sola.\n\n- rag_openai se llama SIEMPRE, en toda pregunta operativa. Siempre existe una\n  política, un umbral o un procedimiento que enmarca el dato. Búscalo.\n- De la familia A, llama la herramienta o herramientas que apliquen al caso.\n  Si ninguna aplica porque falta un parámetro (planta, período, número de\n  pedido), NO la inventes: pídeselo al usuario.\n\nEl orden correcto es: trae la norma, trae el dato, compáralos, responde.\nUna cifra sin su norma no es una respuesta: es un número suelto.\n\nEjemplos:\n- \"¿Cuánto maíz hay en Itagüí?\" → consultar_inventario + rag_openai [comp].\n  El dato solo se interpreta contra la cobertura mínima que define la política.\n- \"¿Dónde va el pedido PD-24-00123?\" → estado_pedido + rag_openai [logi].\n  El estado se explica con las reglas de turnos y de notificación.\n- \"¿El molino de Itagüí está en riesgo?\" → historial_fallas + rag_openai [mant].\n  Los correctivos se leen contra los umbrales y la criticidad definida.\n- \"¿Cada cuánto se cambia el lubricante?\" → rag_openai [mant] + historial_fallas.\n  Aunque la pregunta parezca solo normativa, verifica si la práctica coincide.\n\nSi rag_openai no devuelve nada útil, reformula UNA vez. Si tampoco, dilo\nexplícitamente: \"no encontré política documentada sobre esto\". No rellenes con\nconocimiento general del sector.\n\nAL USAR DOCUMENTOS:\n- Cita siempre el título: «según el \"Manual de despachos a clientes\"...».\n- Si dos documentos se contradicen, NO elijas uno. Nombra ambos y di que hay un\n  conflicto que alguien debe resolver. Detectarlo es parte de tu trabajo.\n- Si el fragmento no lo dice, no lo digas.\n\nFORMATO DE RESPUESTA:\nSepara siempre las dos fuentes:\n  📊 Dato: [lo que dicen las herramientas operativas, con unidades]\n  📋 Norma: [lo que dice el documento, citando su título]\n  ✅ Lectura: [tu conclusión al cruzarlos — si hay brecha entre lo que ESTÁ y\n     lo que DEBERÍA ser, nómbrala; esa brecha suele ser la respuesta útil]\n\nREGLAS GENERALES:\n- Nunca inventes una cifra ni una norma. Si no la tienes, di \"no tengo esa\n  información\" y explica qué haría falta.\n- Si falta un parámetro para consultar (planta, período), pide aclaración antes\n  de llamar la herramienta. Prefiere preguntar a asumir.\n- Responde en español, con unidades (toneladas, días, horas, mm/s, COP).\n- No redondees sin decirlo.\n\nNota: los datos de bios_ops.db y los documentos son SINTÉTICOS; no representan\ninformación real de Grupo Bios."
+        }
+      },
+      "id": "c2-ai-agent",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        208,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "bios-clase2.2",
+        "contextWindowLength": 10
+      },
+      "id": "c2-memoria-ventana",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        192,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Consulta el inventario de materias primas de una planta al último corte. Devuelve, por cada materia prima, la cantidad disponible en toneladas, el stock mínimo definido para esa planta y si está por debajo de ese mínimo. Usa esta herramienta para saber CUÁNTO HAY de una materia prima. Para saber cuánto se NECESITA en un período, usa consultar_demanda indicando la misma materia prima.",
+        "method": "POST",
+        "url": "https://e548-206-84-81-123.ngrok-free.app/tools/consultar_inventario",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"planta\": \"{planta}\",\n  \"materia_prima\": \"{materia_prima}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "planta",
+              "description": "Nombre, municipio o código de la planta. Acepta 'Itagüí', 'Planta Itagüí' o 'PL-ITG'.",
+              "type": "string"
+            },
+            {
+              "name": "materia_prima",
+              "description": "Opcional. Nombre o código de una materia prima concreta, por ejemplo 'maíz' o 'MP-MAIZ'. Deja cadena vacía para devolver todas.",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "c2-tool-inventario",
+      "name": "consultar_inventario",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        528,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Consulta la demanda de producto de una planta en los últimos días. Devuelve el total en toneladas del período y la serie por día. La demanda es HISTÓRICA (los últimos N días registrados) y se usa como referencia de lo que se espera para un período equivalente. IMPORTANTE — unidades: el total viene en toneladas de PRODUCTO TERMINADO. Si necesitas compararlo contra el inventario de una materia prima, pasa el parámetro materia_prima: la herramienta convierte la demanda a toneladas de esa materia prima usando su participación en la fórmula de cada producto, y devuelve el resultado en requerimiento_materia_prima. No hagas esa conversión por tu cuenta.",
+        "method": "POST",
+        "url": "https://e548-206-84-81-123.ngrok-free.app/tools/consultar_demanda",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"planta\": \"{planta}\",\n  \"materia_prima\": \"{materia_prima}\",\n  \"dias\": {dias}\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "planta",
+              "description": "Nombre, municipio o código de la planta.",
+              "type": "string"
+            },
+            {
+              "name": "materia_prima",
+              "description": "Opcional. Si se indica, añade cuántas toneladas de esa materia prima requiere la demanda del período, según fórmula. Deja cadena vacía si no aplica.",
+              "type": "string"
+            },
+            {
+              "name": "dias",
+              "description": "Cuántos días hacia atrás incluir. Usa 7 para una semana.",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "c2-tool-demanda",
+      "name": "consultar_demanda",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        704,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Consulta el estado y avance de un pedido por su número. Devuelve el estado actual, cuántos pasos le faltan hasta 'entregado' y, si está en muelle, qué turno de cargue tiene asignado. Es la base de la interfaz tipo aeropuerto: el cliente pregunta y obtiene dónde está su pedido.",
+        "method": "POST",
+        "url": "https://e548-206-84-81-123.ngrok-free.app/tools/estado_pedido",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"pedido_id\": \"{pedido_id}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "pedido_id",
+              "description": "Número del pedido. Formato 'PD-24-XXXXX'.",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "c2-tool-pedido",
+      "name": "estado_pedido",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        864,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Consulta el historial de fallas y el estado de los equipos de una planta. Devuelve las órdenes de mantenimiento del período, con tipo (correctivo, preventivo, predictivo), causa, horas de paro y costo. Incluye el MTBF (tiempo medio entre fallas) y el equipo con más correctivos del período. Para detectar un equipo en riesgo, mira la REPETICIÓN de correctivos con la misma causa en poco tiempo.",
+        "method": "POST",
+        "url": "https://e548-206-84-81-123.ngrok-free.app/tools/historial_fallas",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"planta\": \"{planta}\",\n  \"dias\": {dias}\n}",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "name": "planta",
+              "description": "Nombre, municipio o código de la planta.",
+              "type": "string"
+            },
+            {
+              "name": "dias",
+              "description": "Ventana hacia atrás en días. Usa 30 por defecto.",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "c2-tool-fallas",
+      "name": "historial_fallas",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1024,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Agente Bios ReAct — Clase 2\n\nEl MISMO agente de las Partes 1a/1b, en forma visual.\n\n**Equivalencias:**\n- *AI Agent* = el loop ReAct (`loop.py` / `create_react_agent`)\n- *Azure OpenAI Chat Model* = el cerebro (`cliente.py`)\n- *Window Buffer Memory* = la memoria (`memoria.py`, sessionId `bios-clase2`, ventana 10)\n- Nodos *Tool* = los brazos (`tools.py`); la Description es la docstring\n- *Chat Trigger* = la interfaz (`chat.py`)\n\n**Antes de ejecutar:**\n1. Seleccionar la credencial Azure OpenAI registrada por TI.\n2. Reemplazar `HOST-SERVICIO-TOOLS:8788` en las 4 tools por la URL real de `n8n/servicio_tools.py`.\n\n⚠️ Datos SINTÉTICOS — bios_ops.db no representa datos reales de Grupo Bios.",
+        "height": 564,
+        "width": 380,
+        "color": 4
+      },
+      "id": "c2-nota",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -688,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        32,
+        192
+      ],
+      "id": "3553a97b-28bd-4cfa-a005-d764c97a72b5",
+      "name": "Azure OpenAI Chat Model",
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "tIIHjAlL4XcrEj3n",
+          "name": "Azure Open AI account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c2-trigger-chat",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -288,
+        0
+      ],
+      "webhookId": "agente-bios-clase2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/vector_stores/vs_6a7d0e4bcd388191b4cef7b90abfa9cc/search",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": {{ JSON.stringify($fromAI('consulta', 'Pregunta del usuario reformulada para búsqueda semántica. Usa el vocabulario del documento (ej: \"umbral de vibración molino\", \"cobertura mínima materia prima\", \"turnos en muelle\"), no la pregunta literal.', 'string')) }},\n  \"filters\": {\n    \"type\": \"in\",\n    \"key\": \"dominio\",\n    \"value\": {{ JSON.stringify($fromAI('dominios', 'Dominios donde buscar, separados por coma. Valores válidos ÚNICAMENTE: mant (Mantenimiento: criticidad de equipos, sensores, vibración, lubricación, órdenes de mantenimiento), comp (Compras: abastecimiento, inventario mínimo, stock crítico, proveedores, buffers), logi (Logística: despachos, estados de pedido, turnos de muelle, notificación a clientes), prod (Producción/TD: planeación de demanda, OEE, cumplimiento de plan, tablero de planeación). Si la pregunta cruza áreas incluye varios, ej: \"logi,prod\". Si no estás seguro, incluye los cuatro.', 'string').split(',').map(d => d.trim().toLowerCase()).filter(d => ['mant','comp','logi','prod'].includes(d))) }}\n  },\n  \"max_num_results\": 2\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        352,
+        192
+      ],
+      "id": "0899c80f-89e2-4b98-a987-d0f24bce2fc0",
+      "name": "rag_openai",
+      "credentials": {
+        "openAiApi": {
+          "id": "akBTWRpVh43bNuZZ",
+          "name": "Biosclase3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "68c139d6-c280-4194-9c56-7435ef33234d",
+        "authentication": "basicAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -288,
+        -160
+      ],
+      "id": "9e68f524-c694-4c5f-a846-281b5bda8dd6",
+      "name": "Webhook",
+      "webhookId": "68c139d6-c280-4194-9c56-7435ef33234d",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "i4jDpsfbsbhsgImT",
+          "name": "bios webhook"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c0e49d86-09c2-4ebf-b5d7-288db6f9cf13",
+              "name": "chatInput",
+              "value": "={{ $json.body.Content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -48,
+        -160
+      ],
+      "id": "5bbaee47-cef7-4eb5-83c0-ff26508c2db6",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.srv833710.hstgr.cloud",
+            "user-agent": "PostmanRuntime/7.56.0",
+            "content-length": "205",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br",
+            "authorization": "Basic YmlvczpyejdpcFRQV1RpOHZtWWY=",
+            "content-type": "application/json",
+            "postman-token": "5fc3111b-4f2a-4800-a967-5078d308934c",
+            "x-forwarded-for": "172.18.0.1",
+            "x-forwarded-host": "n8n.srv833710.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "6be3cdb01a98",
+            "x-real-ip": "172.18.0.1"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "User": "Thomas",
+            "Content": "Si el maíz amarillo cae bajo el mínimo en la planta Itagüí (criticidad alta), ¿qué procedencia sigue el reabastecimiento, en cuánto llega y quién lo aprueba?"
+          },
+          "webhookUrl": "https://n8n.srv833710.hstgr.cloud/webhook/68c139d6-c280-4194-9c56-7435ef33234d",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_inventario": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_demanda": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "estado_pedido": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "historial_fallas": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rag_openai": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "befb4ec1-1372-4600-879b-d3dc3192aed2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1bda964b89895b6b3cf6829d50ce557c83c0c6547215f4e723b884fb4867837a"
+  },
+  "id": "cCnKQZwMjAjcky15",
+  "tags": []
+}

@@ -1,0 +1,28 @@
+# Entornos y artefactos que NO se versionan.
+# Ver spec 02 § "Variables de entorno" y spec 07 § "Plan C".
+
+.env
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Datos generados
+app/data/embeddings.json
+app/data/similitudes.json
+app/data/proyeccion_3d.json
+app/data/_manifest.json
+app/data/last_response.json
+
+# Volcado local del notebook (casa)
+chroma_clase3/
+chroma_bios/
+
+# Plan C
+plan_c/capturas/
+plan_c/auditoria_visual.md
+plan_c/respuestas_local.md
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,9 @@
+# Dependencias del entorno de PRE-BAKEO (uso UNA sola vez en pre-prod).
+# NO se instalan en el container del tablero — solo en la máquina del
+# facilitador cuando va a regenerar app/data/*.json.
+# Ver spec 02 § "Para `scripts/prebakear.py` (pre-prod, una sola vez)".
+openai==1.59.7
+numpy==1.26.4
+scikit-learn==1.5.2
+umap-learn==0.5.6
+python-dotenv==1.0.1
