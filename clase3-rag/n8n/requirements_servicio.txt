@@ -1,0 +1,7 @@
+# Dependencias del servicio RAG (lo que aloja TI de Bios en su VM/contenedor).
+# Ver spec 02 § "Para n8n/servicio_rag.py".
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+chromadb==0.5.23
+pydantic==2.10.4
+python-dotenv==1.0.1

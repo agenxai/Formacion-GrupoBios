@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG · Cartografía del significado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0A0D1C;
+    --bg-alt: #10142B;
+    --bg-panel: #141935;
+    --ink: #EDEFF7;
+    --ink-dim: #9AA1C4;
+    --ink-faint: #5C628A;
+    --violet: #7C6CF6;
+    --cyan: #2FE0C4;
+    --amber: #F5A623;
+    --rose: #F65C89;
+    --line: rgba(237,239,247,0.10);
+    --line-strong: rgba(237,239,247,0.20);
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  *{ box-sizing: border-box; margin:0; padding:0; }
+
+  html{ scroll-behavior:smooth; }
+
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height:1.5;
+    overflow-x:hidden;
+  }
+
+  /* ---------- fondo de estrellas persistente ---------- */
+  #starfield{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 15%, rgba(124,108,246,0.14), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 85% 80%, rgba(47,224,196,0.10), transparent 60%);
+  }
+  #starfield svg{ width:100%; height:100%; }
+  .star{ fill: var(--ink); opacity:0.5; }
+  .star.dim{ opacity:0.18; }
+
+  /* ---------- nav de pipeline (riel lateral) ---------- */
+  #pipeline-rail{
+    position:fixed; left:28px; top:50%; transform:translateY(-50%);
+    z-index:50; display:flex; flex-direction:column; gap:22px;
+  }
+  .rail-step{
+    display:flex; align-items:center; gap:12px; cursor:pointer;
+    opacity:0.4; transition: opacity .35s ease;
+  }
+  .rail-step.active{ opacity:1; }
+  .rail-dot{
+    width:9px; height:9px; border-radius:50%;
+    background: var(--ink-faint); flex-shrink:0;
+    transition: background .35s ease, box-shadow .35s ease, transform .35s ease;
+  }
+  .rail-step.active .rail-dot{
+    background: var(--cyan);
+    box-shadow: 0 0 0 4px rgba(47,224,196,0.15);
+    transform: scale(1.15);
+  }
+  .rail-label{
+    font-family: var(--font-mono); font-size:11px; letter-spacing:0.04em;
+    color: var(--ink-dim); white-space:nowrap;
+  }
+  .rail-step.active .rail-label{ color: var(--ink); }
+  .rail-line{
+    position:absolute; left:4px; top:10px; bottom:10px; width:1px;
+    background: var(--line); z-index:-1;
+  }
+  @media (max-width: 900px){ #pipeline-rail{ display:none; } }
+
+  /* ---------- estructura general ---------- */
+  :root{ --rail-clearance: 260px; }
+  section{
+    position:relative; z-index:1;
+    min-height:100vh;
+    display:flex; flex-direction:column; justify-content:center;
+    padding: 100px 6vw 100px var(--rail-clearance);
+  }
+  @media (max-width: 900px){
+    section{ padding: 90px 7vw; }
+  }
+
+  .eyebrow{
+    font-family: var(--font-mono); font-size:12px; letter-spacing:0.12em;
+    text-transform:uppercase; color: var(--cyan);
+    display:flex; align-items:center; gap:10px; margin-bottom:18px;
+  }
+  .eyebrow::before{ content:''; width:24px; height:1px; background: var(--cyan); display:inline-block; }
+
+  h1,h2,h3{ font-family: var(--font-display); font-weight:600; letter-spacing:-0.01em; }
+
+  h2{ font-size: clamp(32px, 4vw, 52px); margin-bottom:20px; max-width:16ch; }
+
+  .lede{ font-size: clamp(16px,1.4vw,19px); color: var(--ink-dim); max-width:52ch; margin-bottom:44px; }
+
+  .reveal{ opacity:0; transform: translateY(28px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+  .reveal.d1{ transition-delay:.08s; }
+  .reveal.d2{ transition-delay:.16s; }
+  .reveal.d3{ transition-delay:.24s; }
+  .reveal.d4{ transition-delay:.32s; }
+
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+    .reveal{ opacity:1; transform:none; transition:none; }
+  }
+
+  .stage{
+    display:grid; grid-template-columns: 1fr 1fr; gap:64px; align-items:center;
+    max-width:1280px; margin:0 auto; width:100%;
+  }
+  @media (max-width: 980px){ .stage{ grid-template-columns:1fr; gap:36px; } }
+
+  .panel{
+    background: var(--bg-panel); border:1px solid var(--line);
+    border-radius:16px; padding:28px;
+  }
+
+  .tag{
+    font-family: var(--font-mono); font-size:11px; color: var(--ink-faint);
+    letter-spacing:0.06em; text-transform:uppercase;
+  }
+
+  button, .btn{
+    font-family: var(--font-mono); font-size:12px; letter-spacing:0.04em;
+    background: transparent; border:1px solid var(--line-strong); color: var(--ink);
+    padding:9px 16px; border-radius:8px; cursor:pointer; transition: all .2s ease;
+  }
+  button:hover, .btn:hover{ border-color: var(--cyan); color: var(--cyan); }
+  button.primary{ background: var(--cyan); color:#04151F; border-color:var(--cyan); font-weight:600; }
+  button.primary:hover{ filter:brightness(1.1); color:#04151F; }
+
+  ::selection{ background: var(--violet); color:#fff; }
+</style>
+</head>
+<body>
+
+<div id="starfield"><svg id="starfield-svg"></svg></div>
+
+<nav id="pipeline-rail">
+  <div class="rail-line"></div>
+  <div class="rail-step" data-target="hero"><span class="rail-dot"></span><span class="rail-label">00 · Intro</span></div>
+  <div class="rail-step" data-target="problema"><span class="rail-dot"></span><span class="rail-label">01 · Problema</span></div>
+  <div class="rail-step" data-target="componentes"><span class="rail-dot"></span><span class="rail-label">02 · Componentes</span></div>
+  <div class="rail-step" data-target="chunking"><span class="rail-dot"></span><span class="rail-label">03 · Chunking</span></div>
+  <div class="rail-step" data-target="embedding"><span class="rail-dot"></span><span class="rail-label">04 · Embeddings</span></div>
+  <div class="rail-step" data-target="vectordb"><span class="rail-dot"></span><span class="rail-label">05 · Vector DB</span></div>
+  <div class="rail-step" data-target="retrieval"><span class="rail-dot"></span><span class="rail-label">06 · Retrieval</span></div>
+  <div class="rail-step" data-target="generacion"><span class="rail-dot"></span><span class="rail-label">07 · Generación</span></div>
+  <div class="rail-step" data-target="recap"><span class="rail-dot"></span><span class="rail-label">08 · Arquitectura</span></div>
+</nav>
+
+<section id="hero">
+  <div class="stage" style="grid-template-columns:1.1fr 1fr;">
+    <div>
+      <div class="eyebrow reveal in">Retrieval Augmented Generation</div>
+      <h1 class="reveal in d1" style="font-size:clamp(40px,6vw,76px); line-height:1.02; max-width:12ch;">
+        La cartografía<br>del significado
+      </h1>
+      <p class="lede reveal in d2" style="margin-top:24px;">
+        Un LLM no "sabe" tus documentos. RAG le da un mapa: convierte tu información en coordenadas de significado y le entrega, justo a tiempo, las coordenadas más relevantes para responder.
+      </p>
+      <div class="reveal in d3" style="display:flex; gap:14px;">
+        <button class="primary" onclick="document.getElementById('problema').scrollIntoView()">Empezar el recorrido →</button>
+        <span class="tag" style="align-self:center;">6 etapas · ~15 min</span>
+      </div>
+    </div>
+    <div class="panel reveal in d2" style="aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;">
+      <svg id="hero-pipeline" viewBox="0 0 400 400" style="width:100%; height:100%;"></svg>
+    </div>
+  </div>
+</section>
+
+<section id="problema">
+  <div class="eyebrow reveal">01 · El problema</div>
+  <h2 class="reveal d1">Un modelo brillante, con memoria congelada</h2>
+  <div class="stage reveal d2" style="grid-template-columns: 1.15fr 0.85fr;">
+    <div>
+      <p class="lede" style="margin-bottom:18px;">Un LLM es extraordinario generando texto fluido y creativo, pero no siempre es preciso con los hechos. Aprendió a partir de una foto fija del mundo, tomada en un momento del entrenamiento — y esa foto puede estar incompleta, desactualizada o simplemente no incluir tus documentos.</p>
+      <p class="lede" style="margin-bottom:18px;">Cuando no sabe algo, no siempre lo admite: a veces "rellena" con algo que suena correcto. A eso lo llamamos <span style="color:var(--rose);">alucinación</span>.</p>
+      <p class="lede" style="margin-bottom:0;">La solución no es hacerlo memorizar más. Es darle <span style="color:var(--cyan);">datos confiables en el momento en que responde</span>, y pedirle que base su respuesta en ellos. Ese es exactamente el principio detrás de RAG.</p>
+    </div>
+    <div class="panel" style="display:flex; flex-direction:column; gap:16px;">
+      <div>
+        <div class="tag" style="margin-bottom:8px;">Sin contexto externo</div>
+        <div style="border-left:3px solid var(--rose); padding:6px 12px; font-size:13.5px; color:var(--ink-dim);">El modelo improvisa sobre huecos en su memoria.</div>
+      </div>
+      <div>
+        <div class="tag" style="margin-bottom:8px;">Reentrenar todo</div>
+        <div style="border-left:3px solid var(--ink-faint); padding:6px 12px; font-size:13.5px; color:var(--ink-dim);">Lento y costoso — hay que repetirlo cada vez que algo cambia.</div>
+      </div>
+      <div>
+        <div class="tag" style="color:var(--cyan); margin-bottom:8px;">Con RAG</div>
+        <div style="border-left:3px solid var(--cyan); padding:6px 12px; font-size:13.5px; color:var(--ink);">El modelo consulta una fuente externa antes de responder — actualizable sin tocar sus pesos.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="componentes">
+  <div class="eyebrow reveal">02 · Componentes</div>
+  <h2 class="reveal d1">Cuatro piezas, un mismo flujo</h2>
+  <p class="lede reveal d2">Antes de entrar en el detalle de cada paso, así es como encajan las piezas de un sistema RAG.</p>
+
+  <div class="stage reveal d3" style="grid-template-columns: repeat(4,1fr); gap:18px; max-width:1280px;">
+    <div class="panel">
+      <div class="tag" style="color:var(--ink-dim);">01</div>
+      <h3 style="font-size:17px; margin:12px 0 8px;">Base de conocimiento</h3>
+      <p style="color:var(--ink-dim); font-size:13px;">El repositorio externo — PDFs, wikis, sitios web — donde vive la información que el modelo puede consultar.</p>
+    </div>
+    <div class="panel">
+      <div class="tag" style="color:var(--violet);">02</div>
+      <h3 style="font-size:17px; margin:12px 0 8px;">Modelo de embeddings</h3>
+      <p style="color:var(--ink-dim); font-size:13px;">Convierte texto en vectores: una representación numérica de su significado.</p>
+    </div>
+    <div class="panel">
+      <div class="tag" style="color:var(--cyan);">03</div>
+      <h3 style="font-size:17px; margin:12px 0 8px;">El retriever</h3>
+      <p style="color:var(--ink-dim); font-size:13px;">Busca en la base vectorial los fragmentos más cercanos en significado a la pregunta.</p>
+    </div>
+    <div class="panel">
+      <div class="tag" style="color:var(--amber);">04</div>
+      <h3 style="font-size:17px; margin:12px 0 8px;">El generador</h3>
+      <p style="color:var(--ink-dim); font-size:13px;">El LLM que redacta la respuesta final, apoyado en lo que el retriever encontró.</p>
+    </div>
+  </div>
+</section>
+
+<section id="chunking">
+  <div class="eyebrow reveal">03 · Chunking</div>
+  <h2 class="reveal d1">Partir el documento en piezas con sentido</h2>
+  <p class="lede reveal d2">No podemos entregarle el documento entero al modelo cada vez. Lo dividimos en fragmentos manejables — chunks — lo bastante pequeños para ser precisos y lo bastante grandes para conservar contexto.</p>
+
+  <div class="stage reveal d3">
+    <div class="panel">
+      <div class="tag" style="margin-bottom:16px;">Documento fuente</div>
+      <div id="chunk-text" style="font-family:var(--font-mono); font-size:11.5px; line-height:1.85; color:var(--ink-dim); max-height:420px; overflow:auto;"></div>
+    </div>
+    <div>
+      <div style="display:flex; flex-direction:column; gap:18px; margin-bottom:22px;">
+        <div>
+          <div style="display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:12px; color:var(--ink-dim); margin-bottom:8px;">
+            <span>Tamaño del chunk</span><span id="chunkSizeVal">80 car.</span>
+          </div>
+          <input id="chunkSize" type="range" min="40" max="160" step="10" value="80" style="width:100%;">
+        </div>
+        <div>
+          <div style="display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:12px; color:var(--ink-dim); margin-bottom:8px;">
+            <span>Superposición (overlap)</span><span id="chunkOverlapVal">15 car.</span>
+          </div>
+          <input id="chunkOverlap" type="range" min="0" max="60" step="5" value="15" style="width:100%;">
+        </div>
+      </div>
+      <div id="chunk-list" class="panel" style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow:auto;"></div>
+      <p style="color:var(--ink-faint); font-size:12.5px; margin-top:14px;">El overlap evita que una idea quede cortada exactamente en el borde entre dos chunks.</p>
+    </div>
+  </div>
+</section>
+
+<section id="embedding">
+  <div class="eyebrow reveal">04 · Modelo de embedding</div>
+  <h2 class="reveal d1">De palabras a coordenadas</h2>
+  <p class="lede reveal d2">Un modelo de embedding convierte cada chunk en un vector: una lista de cientos de números que representa su significado. Frases con significado parecido caen cerca en ese espacio, sin importar las palabras exactas que usen.</p>
+
+  <div class="panel reveal d3" style="margin-bottom:28px;">
+    <div class="tag" style="margin-bottom:14px;">Flujo: texto → modelo → vector</div>
+    <svg id="embed-flow" viewBox="0 0 900 160" style="width:100%; height:auto;"></svg>
+    <button id="embedRunBtn" style="margin-top:12px;">Vectorizar chunk →</button>
+  </div>
+
+  <div class="stage reveal d4" style="grid-template-columns: 1fr 1.3fr; align-items:start;">
+    <div>
+      <div class="tag" style="margin-bottom:10px;">¿Qué es el "espacio semántico"?</div>
+      <p style="color:var(--ink-dim); font-size:14px; line-height:1.75;">Cada vector es un punto en un espacio de cientos de dimensiones. No podemos verlo así, pero podemos proyectarlo a 3 dimensiones para intuirlo: la <span style="color:var(--ink);">distancia entre dos puntos representa qué tan parecido es su significado</span>. Frases sobre "stock crítico" caen cerca entre sí y lejos de frases sobre "vibración del molino", aunque no compartan ni una palabra — porque el modelo aprendió que pertenecen a dominios distintos del negocio.</p>
+      <p style="color:var(--ink-faint); font-size:12.5px; margin-top:14px;">Arrastra para rotar el espacio →</p>
+    </div>
+    <div class="panel" id="scene3d-embed-wrap" style="aspect-ratio:4/3; position:relative; overflow:hidden; cursor:grab;">
+      <div class="tag" style="position:absolute; top:20px; left:20px; z-index:5;">Proyección 3D del espacio semántico</div>
+      <div id="scene3d-embed" style="width:100%; height:100%; position:relative;"></div>
+    </div>
+  </div>
+</section>
+
+<section id="vectordb">
+  <div class="eyebrow reveal">05 · Vector database</div>
+  <h2 class="reveal d1">Un mapa estelar de todos tus chunks</h2>
+  <p class="lede reveal d2">Cada vector se indexa en una base de datos vectorial. Al llegar una consulta, no compara contra todo: navega una estructura optimizada para encontrar los vecinos más cercanos en milisegundos, incluso entre millones de puntos.</p>
+
+  <div class="stage reveal d3" style="grid-template-columns: 1.5fr 1fr; align-items:start;">
+    <div class="panel" id="scene3d-db-wrap" style="aspect-ratio:4/3; position:relative; overflow:hidden; cursor:grab;">
+      <div class="tag" style="position:absolute; top:20px; left:20px; z-index:5;">Arrastra para rotar · clic en un punto</div>
+      <div id="scene3d-db" style="width:100%; height:100%; position:relative;"></div>
+    </div>
+    <div class="panel" id="db-detail-panel" style="min-height:100%; display:flex; flex-direction:column; justify-content:center;">
+      <div class="tag" style="margin-bottom:10px;">Detalle del punto</div>
+      <p id="db-detail-empty" style="color:var(--ink-faint); font-size:13px;">Selecciona una estrella en el mapa para ver el chunk que representa y su vector (valores ilustrativos).</p>
+      <div id="db-detail-content" style="display:none;">
+        <div id="db-detail-cluster" style="font-family:var(--font-mono); font-size:11px; margin-bottom:8px;"></div>
+        <div id="db-detail-text" style="font-size:13.5px; color:var(--ink); margin-bottom:14px; line-height:1.6;"></div>
+        <div class="tag" style="margin-bottom:6px;">Vector (8 de 1536 dim.)</div>
+        <div id="db-detail-vector" style="font-family:var(--font-mono); font-size:11.5px; color:var(--cyan); word-break:break-all;"></div>
+      </div>
+    </div>
+  </div>
+  <p class="reveal d4" style="color:var(--ink-faint); font-size:12.5px; margin-top:14px;">Los puntos cercanos en el espacio son semánticamente similares — así es como el retriever encuentra contexto relevante sin leer todo el texto.</p>
+</section>
+
+<section id="retrieval">
+  <div class="eyebrow reveal">06 · Retrieval + augmentation</div>
+  <h2 class="reveal d1">La pregunta entra al espacio semántico</h2>
+  <p class="lede reveal d2">El modelo de embeddings convierte la pregunta en un vector —un punto nuevo en el mapa estelar— y se miden distancias a todos los chunk documentados. Los más cercanos en significado son el contexto que el LLM usará.</p>
+
+  <!-- Fila 1: query input + animación embedar + canvas 3D -->
+  <div class="panel reveal d3" style="margin-bottom:24px; max-width:1280px; margin-left:auto; margin-right:auto;">
+
+    <!-- query visible -->
+    <div style="display:flex; align-items:flex-start; gap:14px; margin-bottom:20px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:300px;">
+        <div class="tag" style="margin-bottom:8px;">Consulta del usuario</div>
+        <p id="retrieval-query" style="font-family:var(--font-mono); font-size:14px; color:var(--ink); line-height:1.6;">"Si el molino EQ-ITG-MOL-01 entra en alerta por vibración y Itagüí declara stock crítico de maíz, ¿qué procedimientos sigue cada área?"</p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-start;">
+        <button id="retrievalRunBtn" class="primary" style="white-space:nowrap;">▶ Embedar query y buscar vecinos</button>
+        <div id="retrieval-status" class="tag" style="color:var(--ink-faint); min-height:14px;"></div>
+      </div>
+    </div>
+
+    <!-- flujo: query → [modelo embedding] → vector -->
+    <div id="retrieval-flow" style="display:flex; align-items:center; gap:0; margin-bottom:24px; overflow-x:auto;">
+      <div style="flex:1; min-width:200px; border:1px solid var(--line-strong); border-radius:10px; padding:14px 18px;">
+        <div class="tag" style="margin-bottom:6px;">Pregunta (texto)</div>
+        <div style="font-family:var(--font-mono); font-size:11.5px; color:var(--ink-dim); line-height:1.5;">"Si el molino EQ-ITG-MOL-01 entra en alerta..."</div>
+      </div>
+      <div style="flex-shrink:0; padding:0 16px; color:var(--ink-faint); font-family:var(--font-mono); font-size:20px;">→</div>
+      <div style="flex:1; min-width:160px; border:1px solid rgba(124,108,246,0.4); border-radius:10px; padding:14px 18px; text-align:center;">
+        <div class="tag" style="color:var(--violet); margin-bottom:6px;">Modelo de embeddings</div>
+        <div style="font-family:var(--font-mono); font-size:11px; color:var(--ink-faint);">text-embedding-3-small · Azure</div>
+        <div id="retrieval-embed-spinner" style="display:none; margin-top:8px; font-size:11px; color:var(--violet);">embedando…</div>
+      </div>
+      <div style="flex-shrink:0; padding:0 16px; color:var(--ink-faint); font-family:var(--font-mono); font-size:20px;">→</div>
+      <div style="flex:1; min-width:200px; border:1px solid rgba(47,224,196,0.4); border-radius:10px; padding:14px 18px;">
+        <div class="tag" style="color:var(--cyan); margin-bottom:6px;">Vector de la query</div>
+        <div id="retrieval-query-vec" style="font-family:var(--font-mono); font-size:11px; color:var(--ink-faint);">— esperando —</div>
+      </div>
+    </div>
+
+    <!-- fórmula de similitud coseno -->
+    <div style="display:flex; align-items:center; gap:20px; margin-bottom:20px; flex-wrap:wrap; padding:14px 18px; background:rgba(124,108,246,0.06); border:1px solid rgba(124,108,246,0.2); border-radius:10px;">
+      <div style="flex-shrink:0;">
+        <div class="tag" style="color:var(--violet); margin-bottom:4px;">¿Cómo se mide la "parecitud"?</div>
+        <div style="font-size:12px; color:var(--ink-dim);">Similitud coseno</div>
+      </div>
+      <div style="font-family:var(--font-mono); font-size:18px; color:var(--ink); white-space:nowrap;">
+        sim(<span style="color:#EDEFF7;">q</span>, <span style="color:var(--cyan);">c</span>) =
+        <span style="color:var(--ink-dim); padding:0 2px;">(</span><span style="color:#EDEFF7;">q</span> · <span style="color:var(--cyan);">c</span><span style="color:var(--ink-dim);">)</span>
+        <span style="color:var(--ink-faint);"> / </span>
+        (∥<span style="color:#EDEFF7;">q</span>∥ × ∥<span style="color:var(--cyan);">c</span>∥)
+      </div>
+      <div style="flex:1; min-width:200px; font-size:12px; color:var(--ink-dim); line-height:1.5;">
+        <span style="color:#EDEFF7;">q</span> = vector de la pregunta ·
+        <span style="color:var(--cyan);">c</span> = vector del chunk ·
+        resultado ∈ [0, 1] · 1 = mismo significado, 0 = sin relación
+      </div>
+    </div>
+
+    <!-- canvas 3D del retrieval: query cayendo + vecinos -->
+    <div style="display:grid; grid-template-columns: 1.4fr 1fr; gap:20px; align-items:start;">
+      <div class="panel" id="scene3d-retrieval-wrap" style="aspect-ratio:4/3; position:relative; overflow:hidden; cursor:grab; padding:0;">
+        <div class="tag" style="position:absolute; top:16px; left:20px; z-index:5;">Espacio semántico · query vs chunks indexados</div>
+        <div id="scene3d-retrieval" style="width:100%; height:100%; position:relative;"></div>
+        <div id="retrieval-legend" style="position:absolute; bottom:12px; left:20px; display:flex; gap:12px; flex-wrap:wrap; z-index:5; max-width:80%;"></div>
+      </div>
+      <div>
+        <div class="tag" style="margin-bottom:10px;">Chunks recuperados (top-3 por similitud coseno)</div>
+        <div id="retrieval-chunks" style="display:flex; flex-direction:column; gap:8px; min-height:120px;">
+          <p style="color:var(--ink-faint); font-size:13px;">Pulsá <span style="color:var(--cyan);">▶ Embedar query y buscar vecinos</span> para ver el recorrido.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fila 2: prompt aumentado -->
+  <div class="stage reveal d4" style="grid-template-columns: 1fr 1fr; max-width:1280px; margin:0 auto;">
+    <div class="panel">
+      <div class="tag" style="margin-bottom:10px;">Ranking por sim(q, c) — del más cercano al más lejano</div>
+      <div id="retrieval-barplot" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
+    <div class="panel" style="border-color:rgba(245,166,35,0.35);">
+      <div class="tag" style="color:var(--amber); margin-bottom:10px;">Prompt aumentado → al LLM</div>
+      <div id="augmented-prompt" style="font-family:var(--font-mono); font-size:12.5px; line-height:1.8; color:var(--ink-dim); white-space:pre-wrap;"></div>
+    </div>
+  </div>
+</section>
+
+<section id="generacion">
+  <div class="eyebrow reveal">07 · Generación</div>
+  <h2 class="reveal d1">El LLM responde con evidencia, no con memoria</h2>
+  <p class="lede reveal d2">Con el contexto recuperado a la vista, el modelo genera una respuesta fundamentada — y puede citar exactamente de qué chunk salió cada dato.</p>
+
+  <div class="stage reveal d3">
+    <div class="panel">
+      <div class="tag" style="margin-bottom:10px;">Respuesta generada</div>
+      <p id="gen-answer" style="font-size:15px; line-height:1.8; color:var(--ink);"></p>
+    </div>
+    <div class="panel">
+      <div class="tag" style="margin-bottom:14px;">Trazabilidad</div>
+      <div id="gen-sources" style="display:flex; flex-direction:column; gap:10px;"></div>
+    </div>
+  </div>
+</section>
+
+<section id="recap">
+  <div class="eyebrow reveal">08 · Arquitectura completa</div>
+  <h2 class="reveal d1">Todo el pipeline, de un vistazo</h2>
+  <p class="lede reveal d2">Indexación (offline) a la izquierda, consulta (en vivo) a la derecha. Todo confluye en el momento en que el LLM recibe su prompt aumentado.</p>
+
+  <div class="panel reveal d3" style="max-width:1280px; margin:0 auto; width:100%; padding:36px 28px;">
+    <svg id="recap-diagram" viewBox="0 0 1000 480" style="width:100%; height:auto; display:block;"></svg>
+    <!-- leyenda debajo -->
+    <div style="display:flex; justify-content:center; gap:24px; margin-top:20px; flex-wrap:wrap;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="width:10px; height:10px; border-radius:50%; background:var(--ink-faint); display:inline-block;"></span>
+        <span class="tag">Indexación (offline)</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="width:10px; height:10px; border-radius:50%; background:var(--cyan); display:inline-block;"></span>
+        <span class="tag" style="color:var(--cyan);">Consulta (en vivo)</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="width:10px; height:10px; border-radius:50%; background:var(--amber); display:inline-block;"></span>
+        <span class="tag" style="color:var(--amber);">LLM genera</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<script>
+const NS = "http://www.w3.org/2000/svg";
+const svgEl = (tag, attrs={}) => {
+  const el = document.createElementNS(NS, tag);
+  for(const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+};
+
+/* ---------------- Starfield de fondo ---------------- */
+(function starfield(){
+  const svg = document.getElementById('starfield-svg');
+  svg.setAttribute('viewBox','0 0 1000 1000');
+  svg.setAttribute('preserveAspectRatio','none');
+  for(let i=0;i<140;i++){
+    const x = Math.random()*1000, y = Math.random()*1000;
+    const r = Math.random()*1.4 + 0.3;
+    const dim = Math.random() > 0.55;
+    svg.appendChild(svgEl('circle',{cx:x, cy:y, r:r, class:'star'+(dim?' dim':'')}));
+  }
+})();
+
+/* ---------------- Reveal on scroll ---------------- */
+const revealObserver = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('in'); });
+},{ threshold:0.2 });
+document.querySelectorAll('.reveal').forEach(el=>revealObserver.observe(el));
+
+/* ---------------- Rail de navegación ---------------- */
+const railSteps = document.querySelectorAll('.rail-step');
+railSteps.forEach(step=>{
+  step.addEventListener('click', ()=>{
+    document.getElementById(step.dataset.target).scrollIntoView({behavior:'smooth'});
+  });
+});
+const sectionIds = ['hero','problema','componentes','chunking','embedding','vectordb','retrieval','generacion','recap'];
+const sectionEls = sectionIds.map(id=>document.getElementById(id));
+const railObserver = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const id = e.target.id;
+      railSteps.forEach(s=> s.classList.toggle('active', s.dataset.target === id));
+    }
+  });
+},{ threshold:0.5 });
+sectionEls.forEach(el=>railObserver.observe(el));
+
+/* ---------------- Hero: mini pipeline animado ---------------- */
+(function heroPipeline(){
+  const svg = document.getElementById('hero-pipeline');
+  const stages = [
+    {y:40, label:'Doc', color:'#9AA1C4'},
+    {y:110, label:'Chunks', color:'#7C6CF6'},
+    {y:180, label:'Vectores', color:'#2FE0C4'},
+    {y:250, label:'Retrieval', color:'#2FE0C4'},
+    {y:320, label:'Respuesta', color:'#F5A623'},
+  ];
+  stages.forEach((s,i)=>{
+    if(i < stages.length-1){
+      const line = svgEl('line',{x1:200,y1:s.y+14,x2:200,y2:stages[i+1].y-14, stroke:'rgba(237,239,247,0.15)','stroke-width':1.5});
+      svg.appendChild(line);
+    }
+  });
+  stages.forEach((s,i)=>{
+    const g = svgEl('g',{});
+    const circle = svgEl('circle',{cx:200, cy:s.y, r:9, fill:'none', stroke:s.color, 'stroke-width':2});
+    const text = svgEl('text',{x:222, y:s.y+4, fill:'#9AA1C4', 'font-family':'JetBrains Mono','font-size':'12'});
+    text.textContent = s.label;
+    g.appendChild(circle); g.appendChild(text);
+    svg.appendChild(g);
+
+    // pulso animado
+    const pulse = svgEl('circle',{cx:200, cy:s.y, r:9, fill:'none', stroke:s.color, 'stroke-width':1.5, opacity:0.6});
+    pulse.innerHTML = `<animate attributeName="r" values="9;22;9" dur="2.6s" begin="${i*0.5}s" repeatCount="indefinite" />
+      <animate attributeName="opacity" values="0.6;0;0.6" dur="2.6s" begin="${i*0.5}s" repeatCount="indefinite" />`;
+    svg.appendChild(pulse);
+  });
+
+  // partícula viajando por la línea completa
+  const traveler = svgEl('circle',{cx:200, cy:40, r:4, fill:'#2FE0C4'});
+  const path = svgEl('path',{d:'M200,40 L200,320', fill:'none'});
+  svg.appendChild(traveler);
+  let t0 = null;
+  function animateTraveler(ts){
+    if(!t0) t0 = ts;
+    const elapsed = (ts - t0) % 4000;
+    const progress = elapsed / 4000;
+    traveler.setAttribute('cy', 40 + progress*(320-40));
+    traveler.setAttribute('opacity', progress < 0.05 || progress > 0.95 ? 0 : 1);
+    requestAnimationFrame(animateTraveler);
+  }
+  requestAnimationFrame(animateTraveler);
+})();
+
+/* ---------------- Helper: escena 3D con drag-to-rotate ---------------- */
+function create3DScene(container, {perspective=1000} = {}){
+  container.style.perspective = perspective+'px';
+  container.style.perspectiveOrigin = '50% 50%';
+  const world = document.createElement('div');
+  world.style.cssText = 'position:absolute; inset:0; transform-style:preserve-3d; transform-origin:center center;';
+  container.appendChild(world);
+
+  let rx = -18, ry = 25;
+  let dragging = false, lastX=0, lastY=0, autoRotate = true;
+
+  function apply(){ world.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`; }
+  apply();
+
+  container.addEventListener('pointerdown', (e)=>{
+    dragging = true; autoRotate = false; lastX = e.clientX; lastY = e.clientY;
+    container.style.cursor = 'grabbing';
+    container.setPointerCapture(e.pointerId);
+  });
+  container.addEventListener('pointermove', (e)=>{
+    if(!dragging) return;
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    ry += dx*0.35; rx -= dy*0.35;
+    rx = Math.max(-80, Math.min(80, rx));
+    lastX = e.clientX; lastY = e.clientY;
+    apply();
+  });
+  ['pointerup','pointerleave'].forEach(evt=>{
+    container.addEventListener(evt, ()=>{ dragging=false; container.style.cursor='grab'; });
+  });
+
+  function tick(){
+    if(autoRotate){ ry += 0.12; apply(); }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  function addPoint({x,y,z,size=9,color='#2FE0C4',glow=true}){
+    const p = document.createElement('div');
+    p.style.cssText = `position:absolute; left:50%; top:50%; width:${size}px; height:${size}px; margin:${-size/2}px 0 0 ${-size/2}px; border-radius:50%; background:${color}; transform: translate3d(${x}px, ${y}px, ${z}px); ${glow?`box-shadow:0 0 ${size*1.4}px ${color}99;`:''} transition: background .25s ease, width .25s ease, height .25s ease; cursor:pointer;`;
+    world.appendChild(p);
+    return p;
+  }
+  return { world, addPoint, setAutoRotate:(v)=>autoRotate=v };
+}
+
+/* ---------------- Chunking interactivo ---------------- */
+(function chunkingDemo(){
+  // Fuente: extraído del corpus sintético de Bios (fam. Mantenimiento,
+  // mant_guia_sensor, párr. 2 — incluye la anomalía RAG-1).
+  const SOURCE = "Los sensores de vibración en molinos se configuran para reportar velocidad efectiva en milímetros por segundo (mm/s) en el eje radial. El umbral normal está en 0.0–3.5 mm/s. La alerta amarilla dispara entre 3.5 y 5.5 mm/s; la alerta roja dispara por encima de 5.5 mm/s. Cuando el molino supera el umbral de vibración de 5.5 mm/s durante más de 2 turnos consecutivos, el turno de mantenimiento debe detener el lote en curso, aislar el equipo de la línea, notificar al Coordinador de Mantenimiento con copia al Director de Planta, y abrir una orden de mantenimiento de tipo 'urgente'. El lote detenido se reagendariza en el siguiente turno disponible con prioridad alta. La lectura de temperatura del rodamiento se interpreta en combinación con la vibración. Temperatura sobre 78 °C con vibración en rango amarillo sugiere lubricación degradada. Temperatura sobre 78 °C con vibración en rango rojo sugiere daño de rodamiento y exige parada inmediata, no solo inspección.";
+  const textEl = document.getElementById('chunk-text');
+  const listEl = document.getElementById('chunk-list');
+  const sizeInput = document.getElementById('chunkSize');
+  const overlapInput = document.getElementById('chunkOverlap');
+  const sizeVal = document.getElementById('chunkSizeVal');
+  const overlapVal = document.getElementById('chunkOverlapVal');
+  const palette = ['#7C6CF6','#2FE0C4','#F5A623','#F65C89','#7C6CF6','#2FE0C4'];
+
+  function computeChunks(size, overlap){
+    const chunks = [];
+    let start = 0;
+    while(start < SOURCE.length){
+      const end = Math.min(start + size, SOURCE.length);
+      chunks.push({start, end, text: SOURCE.slice(start, end)});
+      if(end === SOURCE.length) break;
+      start = end - overlap;
+    }
+    return chunks;
+  }
+
+  function render(){
+    const size = parseInt(sizeInput.value);
+    const overlap = parseInt(overlapInput.value);
+    sizeVal.textContent = size + ' car.';
+    overlapVal.textContent = overlap + ' car.';
+    const chunks = computeChunks(size, overlap);
+
+    // texto fuente resaltado por chunk (colores alternos, overlap con doble marca)
+    textEl.innerHTML = '';
+    let html = '';
+    for(let i=0;i<SOURCE.length;i++){
+      const owners = chunks.map((c,ci)=> (i>=c.start && i<c.end) ? ci : null).filter(v=>v!==null);
+      let style = 'color:#5C628A;';
+      if(owners.length === 1){
+        style = `background:${palette[owners[0]%palette.length]}22; color:#EDEFF7;`;
+      } else if(owners.length > 1){
+        style = `background:${palette[owners[owners.length-1]%palette.length]}55; color:#EDEFF7; text-decoration:underline; text-decoration-color:#F5A623;`;
+      }
+      html += `<span style="${style}">${SOURCE[i]}</span>`;
+    }
+    textEl.innerHTML = html;
+
+    listEl.innerHTML = '';
+    chunks.forEach((c,i)=>{
+      const div = document.createElement('div');
+      div.style.cssText = `border-left:3px solid ${palette[i%palette.length]}; padding:8px 12px; background:rgba(255,255,255,0.02); border-radius:4px;`;
+      div.innerHTML = `<div style="font-family:'JetBrains Mono'; font-size:10.5px; color:${palette[i%palette.length]}; margin-bottom:4px;">chunk_${i.toString().padStart(2,'0')} · ${c.text.length} car.</div><div style="font-size:12.5px; color:#9AA1C4;">${c.text}</div>`;
+      listEl.appendChild(div);
+    });
+  }
+  sizeInput.addEventListener('input', render);
+  overlapInput.addEventListener('input', render);
+  render();
+})();
+
+/* ---------------- Embedding: flujograma texto -> modelo -> vector ---------------- */
+(function embedFlow(){
+  const svg = document.getElementById('embed-flow');
+  const btn = document.getElementById('embedRunBtn');
+
+  function box(x,y,w,h,label,sub,stroke){
+    const g = svgEl('g',{});
+    g.appendChild(svgEl('rect',{x,y,width:w,height:h,rx:12,fill:'#141935',stroke,'stroke-width':1.4}));
+    const t1 = svgEl('text',{x:x+w/2,y:y+h/2-(sub?6:-4),fill:'#EDEFF7','font-family':'JetBrains Mono','font-size':'12.5','text-anchor':'middle'});
+    t1.textContent = label; g.appendChild(t1);
+    if(sub){
+      const t2 = svgEl('text',{x:x+w/2,y:y+h/2+14,fill:'#5C628A','font-family':'JetBrains Mono','font-size':'10','text-anchor':'middle'});
+      t2.textContent = sub; g.appendChild(t2);
+    }
+    svg.appendChild(g);
+    return g;
+  }
+  box(20,50,190,60,'"...el molino supera','vibración >5.5 mm/s"','rgba(237,239,247,0.25)');
+  box(355,35,190,90,'Modelo de','Embeddings','#7C6CF6');
+  const vecBox = box(690,50,190,60,'[ ? ]','esperando…','#2FE0C4');
+
+  [[210,80,355,80],[545,80,690,80]].forEach(([x1,y1,x2,y2])=>{
+    svg.appendChild(svgEl('line',{x1,y1,x2:x2-8,y2,stroke:'rgba(237,239,247,0.3)','stroke-width':1.5,'marker-end':'url(#arrowhead)'}));
+  });
+  const defs = svgEl('defs',{});
+  defs.innerHTML = `<marker id="arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="rgba(237,239,247,0.4)"/></marker>`;
+  svg.insertBefore(defs, svg.firstChild);
+
+  const traveler = svgEl('circle',{cx:20,cy:80,r:5,fill:'#2FE0C4',opacity:0});
+  svg.appendChild(traveler);
+
+  function randVec(n){ return Array.from({length:n}, ()=> (Math.random()*2-1).toFixed(2)); }
+
+  btn.addEventListener('click', ()=>{
+    traveler.setAttribute('opacity','1');
+    traveler.innerHTML = `<animate attributeName="cx" from="20" to="440" dur="1s" fill="freeze" />`;
+    setTimeout(()=>{
+      vecBox.querySelectorAll('text')[0].textContent = '';
+      const v = randVec(3);
+      vecBox.querySelectorAll('text')[0].textContent = `[${v.join(', ')}...]`;
+      vecBox.querySelectorAll('text')[1].textContent = '1536 dimensiones';
+      vecBox.querySelector('rect').setAttribute('stroke','#2FE0C4');
+      traveler.setAttribute('opacity','0');
+      traveler.setAttribute('cx','20');
+    }, 950);
+  });
+})();
+
+/* ---------------- Embedding: espacio semántico en 3D ---------------- */
+(function embedScatter3D(){
+  const container = document.getElementById('scene3d-embed');
+  const scene = create3DScene(container, {perspective:900});
+  const clusters = [
+    { label:'Mantenimiento', color:'#2FE0C4', cx:-70, cy:-40, cz:30, points:8 },
+    { label:'Compras', color:'#7C6CF6', cx:70, cy:-55, cz:-30, points:7 },
+    { label:'Logística', color:'#F5A623', cx:-40, cy:55, cz:-50, points:6 },
+    { label:'Producción/TD', color:'#F65C89', cx:60, cy:60, cz:40, points:6 },
+  ];
+  clusters.forEach(cl=>{
+    for(let i=0;i<cl.points;i++){
+      const x = cl.cx + (Math.random()-0.5)*55;
+      const y = cl.cy + (Math.random()-0.5)*55;
+      const z = cl.cz + (Math.random()-0.5)*55;
+      scene.addPoint({x,y,z,size:8,color:cl.color});
+    }
+  });
+  // leyenda
+  const legend = document.createElement('div');
+  legend.style.cssText = 'position:absolute; bottom:16px; left:20px; display:flex; gap:14px; flex-wrap:wrap; z-index:5; max-width:80%;';
+  clusters.forEach(cl=>{
+    legend.innerHTML += `<span style="font-family:'JetBrains Mono'; font-size:10.5px; color:${cl.color};">● ${cl.label}</span>`;
+  });
+  document.getElementById('scene3d-embed-wrap').appendChild(legend);
+})();
+
+/* ---------------- Vector DB: mapa estelar interactivo en 3D ---------------- */
+(function vectorDbMap3D(){
+  const container = document.getElementById('scene3d-db');
+  const scene = create3DScene(container, {perspective:1100});
+
+  // Clústers del corpus Bios (4 dominios Champion — ver spec 03).
+  const clusters = [
+    { label:'Mantenimiento', color:'#2FE0C4', cx:-80, cy:-50, cz:40,
+      chunks:[
+        'Los sensores de vibración en molinos reportan velocidad efectiva en mm/s en el eje radial. Umbral normal 0.0–3.5; alerta amarilla 3.5–5.5; alerta roja >5.5.',
+        'Cuando el molino supera 5.5 mm/s durante más de 2 turnos, el turno detiene el lote, aísla el equipo, notifica al Coordinador y abre orden de tipo «urgente».',
+        'Temperatura del rodamiento sobre 78 °C con vibración en rango rojo sugiere daño de rodamiento y exige parada inmediata.'
+      ]},
+    { label:'Compras', color:'#7C6CF6', cx:75, cy:-60, cz:-35,
+      chunks:[
+        'El reorden se dispara automáticamente cuando el inventario de una materia prima cae por debajo de su mínimo, definido por Compras + Producción.',
+        'Todo stock crítico en planta de criticidad alta activa una orden de abastecimiento de prioridad 1, con proveedor en zona norte y ETA comprometida de 48 horas.'
+      ]},
+    { label:'Logística', color:'#F5A623', cx:-45, cy:60, cz:-55,
+      chunks:[
+        'Un pedido pasa por cuatro estados: en_cola, en_muelle, en_ruta y entregado. La transición la hace el operario en la APP de Logística.',
+        'Cuando un pedido lleva más de 5 turnos en estado en_muelle, Logística dispara notificación automática al cliente con razón y nuevo slot estimado.'
+      ]},
+    { label:'Producción/TD', color:'#F65C89', cx:65, cy:65, cz:45,
+      chunks:[
+        'La planeación de demanda se actualiza mensualmente, con insumo estadístico de los últimos 24 meses de ventas y ajuste por estacionalidad del agro.',
+        'El Comité de Demanda se reúne el último jueves de cada mes; desviaciones mayores al 10% se documentan como excepción con causa raíz y plan correctivo.'
+      ]}
+  ];
+
+  function randVec(n){ return Array.from({length:n}, ()=> (Math.random()*2-1).toFixed(2)); }
+
+  const allPoints = [];
+  clusters.forEach(cl=>{
+    cl.chunks.forEach(text=>{
+      const x = cl.cx + (Math.random()-0.5)*50;
+      const y = cl.cy + (Math.random()-0.5)*50;
+      const z = cl.cz + (Math.random()-0.5)*50;
+      const el = scene.addPoint({x,y,z,size:9,color:cl.color});
+      const data = { text, vector: randVec(8), cluster: cl.label, color: cl.color, el };
+      allPoints.push(data);
+      el.addEventListener('pointerdown', (e)=>{
+        e.stopPropagation();
+        selectPoint(data);
+      });
+    });
+    // algunos puntos extra sin datos (relleno visual del mapa)
+    for(let i=0;i<4;i++){
+      const x = cl.cx + (Math.random()-0.5)*60;
+      const y = cl.cy + (Math.random()-0.5)*60;
+      const z = cl.cz + (Math.random()-0.5)*60;
+      scene.addPoint({x,y,z,size:6,color:cl.color,glow:false});
+    }
+  });
+
+  const emptyEl = document.getElementById('db-detail-empty');
+  const contentEl = document.getElementById('db-detail-content');
+  const clusterEl = document.getElementById('db-detail-cluster');
+  const textEl = document.getElementById('db-detail-text');
+  const vectorEl = document.getElementById('db-detail-vector');
+
+  function selectPoint(data){
+    allPoints.forEach(p=>{ p.el.style.width='9px'; p.el.style.height='9px'; p.el.style.marginLeft='-4.5px'; p.el.style.marginTop='-4.5px'; });
+    data.el.style.width='16px'; data.el.style.height='16px'; data.el.style.marginLeft='-8px'; data.el.style.marginTop='-8px';
+
+    emptyEl.style.display='none';
+    contentEl.style.display='block';
+    clusterEl.style.color = data.color;
+    clusterEl.textContent = '● cluster: ' + data.cluster;
+    textEl.textContent = '"' + data.text + '"';
+    vectorEl.textContent = '[' + data.vector.join(', ') + ', ...]';
+  }
+})();
+
+/* ---------------- Retrieval + prompt aumentado ---------------- */
+(function retrievalDemo(){
+  const container = document.getElementById('scene3d-retrieval');
+  const scene = create3DScene(container, {perspective:1000});
+
+  // Clústers con mismo layout del vector DB (para continuidad visual)
+  const clusters = [
+    { label:'Mantenimiento', color:'#2FE0C4', cx:-80, cy:-50, cz:40,
+      chunks:[
+        { id:'chunk_mant_guia_sensor_03', text:'Cuando el molino supera 5.5 mm/s durante >2 turnos, el turno detiene el lote, aísla el equipo, abre orden «urgente».', vec:[0.42,-0.31,0.18] },
+        { id:'chunk_mant_manual_prev_01', text:'El mantenimiento preventivo de la planta es responsabilidad de la Coordinación de Mantenimiento; periodicidad por criticidad: alta=mensual.', vec:[0.38,-0.28,0.15] },
+        { id:'chunk_mant_politica_crit_02', text:'Los equipos de criticidad alta requieren inspección semanal, plan de contingencia documentado y monitoreo de vibración y temperatura.', vec:[0.36,-0.33,0.20] },
+      ]},
+    { label:'Compras', color:'#7C6CF6', cx:75, cy:-60, cz:-35,
+      chunks:[
+        { id:'chunk_comp_politica_abast_02', text:'Stock crítico en planta de criticidad alta activa orden de abastecimiento de prioridad 1, proveedor en zona norte, ETA 48 horas.', vec:[-0.22,0.35,-0.19] },
+        { id:'chunk_comp_reglas_inv_01', text:'El inventario mínimo de una materia prima es la cantidad por debajo de la cual se considera stock crítico. Sistema emite alerta al cruzar umbral.', vec:[-0.18,0.31,-0.22] },
+      ]},
+    { label:'Logística', color:'#F5A623', cx:-45, cy:60, cz:-55,
+      chunks:[
+        { id:'chunk_logi_manual_despach_02', text:'Pedido con >5 turnos en en_muelle dispara notificación automática al cliente con razón del retraso y nuevo slot estimado.', vec:[0.15,0.28,-0.38] },
+        { id:'chunk_logi_reglas_turnos_01', text:'Los turnos de muelle se asignan por prioridad del pedido: VIP primero, luego perecederos, luego estándar.', vec:[0.12,0.25,-0.35] },
+      ]},
+    { label:'Producción/TD', color:'#F65C89', cx:65, cy:65, cz:45,
+      chunks:[
+        { id:'chunk_prod_proc_demanda_01', text:'La planeación de demanda se actualiza mensualmente con proyección estadística de 24 meses y ajuste por estacionalidad del agro.', vec:[0.28,0.38,0.22] },
+        { id:'chunk_prod_glosario_01', text:'El OEE (Overall Equipment Effectiveness) combina disponibilidad, performance y calidad. Objetivo Bios: 78% en molienda.', vec:[0.25,0.35,0.20] },
+      ]}
+  ];
+
+  // Dibujar el espacio con todos los chunks como puntos
+  const allPoints = [];
+  clusters.forEach(cl=>{
+    cl.chunks.forEach(c=>{
+      const x = cl.cx + (Math.random()-0.5)*40;
+      const y = cl.cy + (Math.random()-0.5)*40;
+      const z = cl.cz + (Math.random()-0.5)*40;
+      const el = scene.addPoint({x,y,z,size:8,color:cl.color,glow:true});
+      c.el = el; c.x = x; c.y = y; c.z = z; c.clusterColor = cl.color;
+      allPoints.push(c);
+    });
+    // puntos de relleno
+    for(let i=0;i<3;i++){
+      const x = cl.cx + (Math.random()-0.5)*50;
+      const y = cl.cy + (Math.random()-0.5)*50;
+      const z = cl.cz + (Math.random()-0.5)*50;
+      scene.addPoint({x,y,z,size:5,color:cl.color,glow:false});
+    }
+  });
+
+  // leyenda
+  const legend = document.getElementById('retrieval-legend');
+  clusters.forEach(cl=>{
+    legend.innerHTML += `<span style="font-family:'JetBrains Mono'; font-size:10px; color:${cl.color};">● ${cl.label}</span>`;
+  });
+  legend.innerHTML += `<span style="font-family:'JetBrains Mono'; font-size:10px; color:#EDEFF7; padding:1px 8px; border:1px solid rgba(237,239,247,0.4); border-radius:10px;">★ Query</span>`;
+
+  // helper: dibujar una línea 3D entre dos puntos (div delgado rotado)
+  function drawLine3D(world, p1, p2, color){
+    const dx = p2.x - p1.x, dy = p2.y - p1.y, dz = p2.z - p1.z;
+    const len = Math.sqrt(dx*dx+dy*dy+dz*dz);
+    const midX = (p1.x+p2.x)/2, midY = (p1.y+p2.y)/2, midZ = (p1.z+p2.z)/2;
+    const lenXZ = Math.sqrt(dx*dx+dz*dz);
+    const rotY = Math.atan2(dx, dz) * 180/Math.PI;
+    const rotX = -Math.atan2(dy, lenXZ) * 180/Math.PI;
+    const line = document.createElement('div');
+    line.style.cssText = `position:absolute; left:50%; top:50%; width:2px; height:`+len+`px; margin:`+(-len/2)+`px 0 0 -1px; background:`+color+`; border-radius:2px; transform: translate3d(${midX}px,${midY}px,${midZ}px) rotateY(${rotY}deg) rotateX(${rotX}deg); transform-origin:center center; box-shadow:0 0 6px ${color}AA; pointer-events:none; transition: opacity .4s ease;`;
+    line.style.opacity = '0';
+    world.appendChild(line);
+    requestAnimationFrame(()=>{ line.style.opacity = '0.7'; });
+    return line;
+  }
+
+  // query y top-3 (coords que tocan los tres dominios — Mantenimiento, Compras, Logística)
+  const queryPos = { x: -15, y: -10, z: 5 };
+  const top3 = [
+    allPoints.find(c => c.id === 'chunk_mant_guia_sensor_03'),
+    allPoints.find(c => c.id === 'chunk_comp_politica_abast_02'),
+    allPoints.find(c => c.id === 'chunk_logi_manual_despach_02'),
+  ];
+  const top3Scores = [0.847, 0.791, 0.734];
+
+  const btn = document.getElementById('retrievalRunBtn');
+  const statusEl = document.getElementById('retrieval-status');
+  const vecEl = document.getElementById('retrieval-query-vec');
+  const spinner = document.getElementById('retrieval-embed-spinner');
+  const chunksEl = document.getElementById('retrieval-chunks');
+  const barplotEl = document.getElementById('retrieval-barplot');
+  const promptEl = document.getElementById('augmented-prompt');
+  const queryText = document.getElementById('retrieval-query').textContent.replace(/^[""]|[""]$/g,'');
+
+  let ran = false;
+  btn.addEventListener('click', async ()=>{
+    if(ran) return;
+    ran = true; btn.style.opacity = '0.5'; btn.style.cursor = 'default';
+
+    // Fase 1: embedando (1.2s)
+    statusEl.textContent = 'fase 1/4 · embedando la query…';
+    spinner.style.display = 'block';
+    await sleep(500);
+    vecEl.textContent = '[0.0312, -0.0847, 0.0423, ...] · 1536 dim';
+    vecEl.style.color = 'var(--cyan)';
+    spinner.style.display = 'none';
+    statusEl.textContent = 'fase 1/4 · ✓ vector de la query listo';
+    await sleep(400);
+
+    // Fase 2: query cayendo al espacio 3D (1s)
+    statusEl.textContent = 'fase 2/4 · ubicando la query en el espacio semántico…';
+    const queryStar = scene.addPoint({x:queryPos.x, y:queryPos.y-200, z:queryPos.z, size:14, color:'#EDEFF7', glow:true});
+    queryStar.style.boxShadow = '0 0 28px #EDEFF7, 0 0 56px #EDEFF777';
+    queryStar.style.zIndex = '100';
+    // animar caída
+    let dropT = 0;
+    await new Promise(resolve => {
+      const drop = setInterval(()=>{
+        dropT += 0.06;
+        const y = queryPos.y - 200 + 200*easeOut(dropT);
+        queryStar.style.transform = `translate3d(${queryPos.x}px, ${y}px, ${queryPos.z}px)`;
+        if(dropT >= 1){ clearInterval(drop); resolve(); }
+      }, 40);
+    });
+    statusEl.textContent = 'fase 2/4 · ✓ query en el espacio';
+    await sleep(300);
+
+    // Fase 3: dibujar líneas a los top-3 (escalonado, 0.4s cada una)
+    statusEl.textContent = 'fase 3/4 · calculando similitud coseno con todos los chunks…';
+    const lines = [];
+    for(let i=0;i<top3.length;i++){
+      await sleep(400);
+      const line = drawLine3D(scene.world, queryPos, top3[i], top3[i].clusterColor);
+      lines.push(line);
+      // iluminar el chunk
+      top3[i].el.style.width = '14px';
+      top3[i].el.style.height = '14px';
+      top3[i].el.style.marginLeft = '-7px';
+      top3[i].el.style.marginTop = '-7px';
+      top3[i].el.style.boxShadow = `0 0 20px ${top3[i].clusterColor}, 0 0 40px ${top3[i].clusterColor}99`;
+      statusEl.textContent = `fase 3/4 · vecino ${i+1}/3 encontrado · score ${top3Scores[i].toFixed(3)}`;
+    }
+    // atenuar el resto
+    allPoints.forEach(p=>{
+      if(!top3.includes(p)){
+        p.el.style.opacity = '0.25';
+        p.el.style.boxShadow = 'none';
+      }
+    });
+    await sleep(300);
+
+    // Fase 4: llenar paneles
+    statusEl.textContent = 'fase 4/4 · ✓ contexto recuperado';
+
+    // chunks recuperados
+    chunksEl.innerHTML = '';
+    top3.forEach((c,i)=>{
+      const div = document.createElement('div');
+      div.style.cssText = `border-left:3px solid ${c.clusterColor}; padding:8px 12px; background:rgba(255,255,255,0.02); border-radius:4px; opacity:0; transform:translateX(12px); transition: all .4s ease;`;
+      div.innerHTML = `<div style="font-family:'JetBrains Mono'; font-size:10px; color:${c.clusterColor}; margin-bottom:4px;">${c.id} · similitud ${top3Scores[i].toFixed(3)}</div><div style="font-size:12.5px; color:#9AA1C4;">${c.text}</div>`;
+      chunksEl.appendChild(div);
+      setTimeout(()=>{ div.style.opacity='1'; div.style.transform='translateX(0)'; }, i*200);
+    });
+
+    // barplot de distancias coseno (top-3 vs resto)
+    barplotEl.innerHTML = '';
+    const allScores = allPoints.map((p,i)=>{
+      const isTop = top3.includes(p);
+      return { id: p.id, score: isTop ? top3Scores[top3.indexOf(p)] : Math.random()*0.45+0.05, color: p.clusterColor, isTop, text: p.text };
+    }).sort((a,b)=> b.score - a.score);
+    // top-3 + 5 siguiente
+    allScores.slice(0,8).forEach((s,i)=>{
+      const bar = document.createElement('div');
+      bar.style.cssText = `display:grid; grid-template-columns: 1fr 60px; gap:8px; align-items:center; opacity:0; transition: opacity .3s ease ${i*80}ms;`;
+      bar.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="flex:0 0 auto; width:${s.isTop ? 100*s.score : 100*s.score}px; max-width:${100*s.score}px; height:9px; border-radius:4px; background:${s.isTop ? s.color : 'rgba(154,161,196,0.25)'}; transition: width .4s ease;"></div>
+          <span style="font-family:'JetBrains Mono'; font-size:9.5px; color:${s.isTop ? s.color : 'var(--ink-faint)'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.id.replace('chunk_','')}</span>
+        </div>
+        <span style="font-family:'JetBrains Mono'; font-size:11px; color:${s.isTop ? 'var(--ink)' : 'var(--ink-faint)'}; text-align:right;">${s.score.toFixed(3)}</span>
+      `;
+      barplotEl.appendChild(bar);
+      requestAnimationFrame(()=>{ bar.style.opacity = s.isTop ? '1' : '0.4'; });
+    });
+
+    // prompt aumentado
+    promptEl.textContent =
+`SISTEMA:
+Respondé solo con base en el CONTEXTO. Si no está ahí, decilo.
+
+CONTEXTO:
+[${top3[0].id}] ${top3[0].text}
+[${top3[1].id}] ${top3[1].text}
+[${top3[2].id}] ${top3[2].text}
+
+PREGUNTA:
+${queryText}`;
+
+    statusEl.textContent = '✓ retrieval completo · 3 chunks recuperados por similitud coseno';
+  });
+
+  function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+  function easeOut(t){ return 1 - Math.pow(1-t, 3); }
+})();
+
+/* ---------------- Generación con citas ---------------- */
+(function generationDemo(){
+  const answerEl = document.getElementById('gen-answer');
+  const sourcesEl = document.getElementById('gen-sources');
+
+  // Respuesta pre-armada del agente Bios RAG (Plan C cuando el webhook
+  // real no está disponible). En clase, si `N8N_WEBHOOK_URL` está
+  // configurado en el backend, el facilitador dispara la llamada en
+  // vivo desde el bloque n8n; acá mantenemos la respuesta estática para
+  // que la web funcione también sin backend.
+  const STATIC_ANSWER = `Cuando el molino EQ-ITG-MOL-01 supera el umbral de vibración de <span style="color:#2FE0C4;">5.5 mm/s durante más de 2 turnos consecutivos</span>, el turno de mantenimiento detiene el lote en curso, aísla el equipo y abre una orden de tipo «urgente» <sup style="color:#2FE0C4; font-family:'JetBrains Mono'; font-size:10px;">[chunk_mant_guia_sensor_03]</sup>. Si en paralelo la planta de Itagüí declara stock crítico de maíz, Compras activa una <span style="color:#7C6CF6;">orden de abastecimiento de prioridad 1</span>, con proveedor en zona norte y ETA de 48 horas <sup style="color:#7C6CF6; font-family:'JetBrains Mono'; font-size:10px;">[chunk_comp_politica_abast_02]</sup>. Si el pedido asociado al lote detenido lleva más de 5 turnos en muelle, Logística <span style="color:#F5A623;">dispara notificación automática al cliente</span> con la razón documentada y el nuevo slot estimado de despacho <sup style="color:#F5A623; font-family:'JetBrains Mono'; font-size:10px;">[chunk_logi_manual_despach_02]</sup>.`;
+
+  const SOURCES = [
+    { id:'chunk_mant_guia_sensor_03', color:'#2FE0C4', text:'Cuando el molino supera el umbral de vibración de 5.5 mm/s durante más de 2 turnos consecutivos, el turno de mantenimiento detiene el lote en curso, aisla el equipo de la línea, notifica al Coordinador de Mantenimiento y abre una orden de mantenimiento de tipo «urgente».' },
+    { id:'chunk_comp_politica_abast_02', color:'#7C6CF6', text:'Todo stock crítico declarado en una planta de criticidad alta activa una orden de abastecimiento de prioridad 1, con asignación de proveedor en zona norte y ETA comprometida de 48 horas.' },
+    { id:'chunk_logi_manual_despach_02', color:'#F5A623', text:'Cuando un pedido lleva más de 5 turnos en estado en_muelle, Logística dispara una notificación automática al cliente con la razón documentada del retraso y el nuevo slot estimado de despacho.' },
+  ];
+
+  // Default: pinta la respuesta pre-armada + sources estáticos.
+  answerEl.innerHTML = STATIC_ANSWER;
+  SOURCES.forEach(s=>{
+    const div = document.createElement('div');
+    div.style.cssText = `border-left:3px solid ${s.color}; padding:8px 12px; background:rgba(255,255,255,0.02); border-radius:4px;`;
+    div.innerHTML = `<div style="font-family:'JetBrains Mono'; font-size:10.5px; color:${s.color}; margin-bottom:4px;">${s.id}</div><div style="font-size:12.5px; color:#9AA1C4;">${s.text}</div>`;
+    sourcesEl.appendChild(div);
+  });
+
+  // En clase: si el backend responde con un webhook de n8n vivo, el
+  // facilitador puede disparar la llamada desde el bloque n8n — el
+  // botón acá es opcional y solo se activa si `webhook_url_presente`
+  // en /api/salud del backend.
+  fetch('/api/salud').then(r=>r.json()).then(s=>{
+    if(s && s.webhook_url_presente){
+      const tag = document.createElement('div');
+      tag.style.cssText = 'margin-top:18px; padding-top:14px; border-top:1px solid var(--line);';
+      tag.innerHTML = `
+        <div class="tag" style="color:var(--cyan); margin-bottom:8px;">● webhook de n8n conectado</div>
+        <div style="font-size:13px; color:var(--ink-dim); margin-bottom:10px;">La respuesta de arriba es la respuesta pre-armada del corpus. En el bloque n8n de la clase, el webhook del agente devuelve esta misma respuesta en vivo, con citations verificables.</div>
+        <button id="liveGenBtn" class="primary">Llamar al agente de n8n en vivo →</button>
+      `;
+      sourcesEl.parentElement.appendChild(tag);
+      document.getElementById('liveGenBtn').addEventListener('click', async ()=>{
+        const q = document.getElementById('retrieval-query').textContent.replace(/^\"|\"$/g,'');
+        answerEl.innerHTML = '<em style="color:var(--ink-faint);">Consultando al agente de n8n…</em>';
+        try{
+          const resp = await fetch('/api/webhook', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ pregunta: q })
+          });
+          const data = await resp.json();
+          if(data.ok){
+            answerEl.innerHTML = data.respuesta;
+            // Re-render sources con las citas devueltas por el webhook vivo
+            sourcesEl.innerHTML = '';
+            (data.citas||[]).forEach((c,i)=>{
+              const colors = ['#2FE0C4','#7C6CF6','#F5A623','#F65C89'];
+              const color = colors[i%colors.length];
+              const div = document.createElement('div');
+              div.style.cssText = `border-left:3px solid ${color}; padding:8px 12px; background:rgba(255,255,255,0.02); border-radius:4px;`;
+              div.innerHTML = `<div style="font-family:'JetBrains Mono'; font-size:10.5px; color:${color}; margin-bottom:4px;">${c.doc} · chunk ${c.chunk} · score ${typeof c.score==='number'?c.score.toFixed(3):c.score}</div>`;
+              sourcesEl.appendChild(div);
+            });
+          } else {
+            answerEl.innerHTML = `<em style="color:var(--rose);">webhook no respondió: ${data.error||'desconocido'}</em><br><br>Respuesta pre-armada:<br><br>${STATIC_ANSWER}`;
+          }
+        } catch(e){
+          answerEl.innerHTML = `<em style="color:var(--rose);">error de conexión: ${e}</em>`;
+        }
+      });
+    }
+  }).catch(()=>{}); // si no hay backend, silencioso.
+})();
+
+/* ---------------- Diagrama de arquitectura final ---------------- */
+(function recapDiagram(){
+  const svg = document.getElementById('recap-diagram');
+  const W = 1000, H = 480;
+
+  // ── Nodos del pipeline ──────────────────────────────────────────
+  // Fila superior = indexación (offline). Fila inferior = consulta (vivo).
+  // El LLM es el punto de convergencia.
+  const nodes = {
+    doc:      { x: 80,   y: 80,  label: 'Documentos',     color: '#9AA1C4', track: 'index' },
+    chunks:   { x: 240,  y: 80,  label: 'Chunking',        color: '#7C6CF6', track: 'index' },
+    embed:    { x: 400,  y: 80,  label: 'Embedding',       color: '#2FE0C4', track: 'index' },
+    vectordb: { x: 560,  y: 80,  label: 'Vector DB',       color: '#2FE0C4', track: 'index' },
+    query:    { x: 560,  y: 320, label: 'Query',          color: '#EDEFF7', track: 'query' },
+    q_embed:  { x: 720,  y: 320, label: 'Embed query',    color: '#2FE0C4', track: 'query' },
+    retrieve: { x: 720,  y: 200, label: 'Retrieval',      color: '#2FE0C4', track: 'query' },
+    prompt:   { x: 860,  y: 200, label: 'Prompt ↑',       color: '#F5A623', track: 'query' },
+    llm:      { x: 860,  y: 80,  label: 'LLM',            color: '#F5A623', track: 'llm' },
+    answer:   { x: 860,  y: 380, label: 'Respuesta',      color: '#F65C89', track: 'answer' },
+  };
+
+  // ── Aristas ──────────────────────────────────────────────────────
+  const edges = [
+    { from: 'doc',      to: 'chunks',   color: '#7C6CF6', track: 'index' },
+    { from: 'chunks',   to: 'embed',    color: '#2FE0C4', track: 'index' },
+    { from: 'embed',    to: 'vectordb', color: '#2FE0C4', track: 'index' },
+    { from: 'query',    to: 'q_embed',  color: '#EDEFF7', track: 'query' },
+    { from: 'q_embed',  to: 'retrieve', color: '#2FE0C4', track: 'query' },
+    // vector DB → retrieval (canasta diagonal)
+    { from: 'vectordb', to: 'retrieve', color: '#2FE0C4', track: 'cross', dashed: true },
+    // retrieval → prompt → LLM
+    { from: 'retrieve', to: 'prompt',   color: '#F5A623', track: 'query' },
+    { from: 'prompt',    to: 'llm',      color: '#F5A623', track: 'query' },
+    // LLM → respuesta
+    { from: 'llm',      to: 'answer',   color: '#F65C89', track: 'answer' },
+  ];
+
+  // ── Defs: markers de flecha + gradient ───────────────────────────
+  const defs = svgEl('defs', {});
+  defs.innerHTML = `
+    <marker id="ah-index" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+      <path d="M0,0 L7,3.5 L0,7 z" fill="#5C628A" />
+    </marker>
+    <marker id="ah-query" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+      <path d="M0,0 L7,3.5 L0,7 z" fill="#2FE0C4" />
+    </marker>
+    <marker id="ah-amber" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+      <path d="M0,0 L7,3.5 L0,7 z" fill="#F5A623" />
+    </marker>
+    <marker id="ah-rose" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+      <path d="M0,0 L7,3.5 L0,7 z" fill="#F65C89" />
+    </marker>
+    <marker id="ah-violet" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+      <path d="M0,0 L7,3.5 L0,7 z" fill="#7C6CF6" />
+    </marker>
+    <marker id="ah-cross" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+      <path d="M0,0 L7,3.5 L0,7 z" fill="#2FE0C4" />
+    </marker>
+  `;
+  svg.appendChild(defs);
+
+  // ── Labels de tracks ─────────────────────────────────────────────
+  const labelIndex = svgEl('text', { x: 280, y: 28, fill: '#5C628A', 'font-family': 'JetBrains Mono', 'font-size': '11', 'text-anchor': 'middle', 'letter-spacing': '0.08em' });
+  labelIndex.textContent = '— INDEXACIÓN · offline —';
+  svg.appendChild(labelIndex);
+
+  const labelQuery = svgEl('text', { x: 720, y: 372, fill: '#5C628A', 'font-family': 'JetBrains Mono', 'font-size': '11', 'text-anchor': 'middle', 'letter-spacing': '0.08em' });
+  labelQuery.textContent = '— CONSULTA · en vivo —';
+  svg.appendChild(labelQuery);
+
+  // ── Dibujar aristas ──────────────────────────────────────────────
+  const markerMap = {
+    index: 'ah-index', query: 'ah-amber', cross: 'ah-cross',
+    answer: 'ah-rose'
+  };
+
+  edges.forEach(e => {
+    const from = nodes[e.from], to = nodes[e.to];
+    const dx = to.x - from.x, dy = to.y - from.y;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    if (len < 1) return;
+    const pad = 30;  // margen para no tocar el nodo
+    const ux = dx/len, uy = dy/len;
+    const x1 = from.x + ux*pad, y1 = from.y + uy*pad;
+    const x2 = to.x - ux*pad,   y2 = to.y - uy*pad;
+
+    const attrs = {
+      x1, y1, x2, y2,
+      stroke: e.dashed ? 'rgba(47,224,196,0.35)' : (e.color === '#2FE0C4' ? 'rgba(47,224,196,0.4)' : 'rgba(237,239,247,0.2)'),
+      'stroke-width': '1.5',
+      'marker-end': `url(#${markerMap[e.track] || 'ah-query'})`
+    };
+    if (e.dashed) attrs['stroke-dasharray'] = '5 4';
+    svg.appendChild(svgEl('line', attrs));
+  });
+
+  // ── Dibujar nodos ────────────────────────────────────────────────
+  Object.entries(nodes).forEach(([key, n]) => {
+    const g = svgEl('g', {});
+
+    // caja del nodo
+    const w = 108, h = 44;
+    g.appendChild(svgEl('rect', {
+      x: n.x - w/2, y: n.y - h/2, width: w, height: h, rx: 10,
+      fill: '#141935', stroke: n.color, 'stroke-width': 1.4
+    }));
+
+    // label
+    const text = svgEl('text', {
+      x: n.x, y: n.y + 4, fill: '#EDEFF7',
+      'font-family': 'JetBrains Mono', 'font-size': '11.5', 'text-anchor': 'middle'
+    });
+    text.textContent = n.label;
+    g.appendChild(text);
+
+    // halo pulsante
+    const halo = svgEl('circle', {
+      cx: n.x, cy: n.y, r: 24, fill: 'none',
+      stroke: n.color, 'stroke-width': 1, opacity: '0.3'
+    });
+    halo.innerHTML = `
+      <animate attributeName="r" values="22;30;22" dur="3s" begin="${Math.random()*2}s" repeatCount="indefinite" />
+      <animate attributeName="opacity" values="0.3;0;0.3" dur="3s" begin="${Math.random()*2}s" repeatCount="indefinite" />
+    `;
+    g.appendChild(halo);
+
+    svg.appendChild(g);
+  });
+
+  // ── Partículas viajeras ──────────────────────────────────────────
+  // Una partícula por arista, viaja de from → to en 2.5s, loop.
+  edges.forEach(e => {
+    const from = nodes[e.from], to = nodes[e.to];
+    const dx = to.x - from.x, dy = to.y - from.y;
+    const pad = 30;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    if (len < 1) return;
+    const x1 = from.x + (dx/len)*pad, y1 = from.y + (dy/len)*pad;
+    const x2 = to.x - (dx/len)*pad,   y2 = to.y - (dy/len)*pad;
+
+    const p = svgEl('circle', {
+      cx: x1, cy: y1, r: 3, fill: e.color, opacity: 0
+    });
+    const dur = 2.5;
+    const delay = Math.random() * dur;
+    p.innerHTML = `
+      <animate attributeName="cx" from="${x1}" to="${x2}" dur="${dur}s" begin="${delay}s" repeatCount="indefinite" />
+      <animate attributeName="cy" from="${y1}" to="${y2}" dur="${dur}s" begin="${delay}s" repeatCount="indefinite" />
+      <animate attributeName="opacity" values="0;0.9;0.9;0" keyTimes="0;0.15;0.85;1" dur="${dur}s" begin="${delay}s" repeatCount="indefinite" />
+      <animate attributeName="r" values="2;4;3" dur="${dur}s" begin="${delay}s" repeatCount="indefinite" />
+    `;
+    svg.appendChild(p);
+  });
+
+  // ── Texto de flujo del pipeline (arriba) ─────────────────────────
+  const flowText = svgEl('text', {
+    x: 500, y: 460, fill: '#5C628A',
+    'font-family': 'JetBrains Mono', 'font-size': '12',
+    'text-anchor': 'middle', 'letter-spacing': '0.04em'
+  });
+  flowText.textContent = 'Documento → Chunk → Embedding → Vector DB   ⋮   Query → Embed query → Retrieval → Prompt ↑ → LLM → Respuesta';
+  svg.appendChild(flowText);
+})();
+
+</script>
+</body>
+</html>

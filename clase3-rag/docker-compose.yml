@@ -1,0 +1,23 @@
+# docker-compose.yml · Tablero de la Clase 3 · RAG
+# Ver spec 02 § "App visual (container de tablero)" y spec 07 § "Plan C".
+
+services:
+  tablero:
+    build: .
+    image: clase3-rag:latest
+    container_name: clase3-rag-tablero
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      # Datos pre-bakeados: read-only dentro del container
+      - ./app/data:/app/app/data:ro
+      # .env (con N8N_WEBHOOK_URL): read-only
+      - ./.env:/app/.env:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import httpx; r=httpx.get('http://localhost:8000/api/salud'); exit(0 if r.status_code == 200 else 1)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s

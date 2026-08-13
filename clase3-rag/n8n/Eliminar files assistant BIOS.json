@@ -1,0 +1,229 @@
+{
+  "name": "Eliminar files assistant BIOS",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -800,
+        -64
+      ],
+      "id": "3f959162-dce9-45d9-b3b6-c7d5d94348f0",
+      "name": "HTTP Request",
+      "credentials": {
+        "openAiApi": {
+          "id": "akBTWRpVh43bNuZZ",
+          "name": "Biosclase3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Script para n8n que extrae los file IDs de un JSON y los devuelve como elementos individuales\n\n// Obtener los datos de entrada\nconst inputData = items[0].json;\n\n// Verificar si los datos tienen la estructura esperada\nif (!inputData || !inputData.data || !Array.isArray(inputData.data)) {\n  throw new Error('El formato de entrada no es válido. Se espera un objeto con una propiedad \"data\" que sea un array.');\n}\n\n// Extraer solo los IDs de los archivos\nconst fileIds = inputData.data.map(file => file.id);\n\n// Crear un array de items donde cada item contiene un ID\nconst returnItems = [];\n\nfor (const id of fileIds) {\n  returnItems.push({\n    json: {\n      fileId: id\n    }\n  });\n}\n\n// n8n espera que se retorne este array de items\nreturn returnItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        112
+      ],
+      "id": "877be2f7-f353-43ff-9f5f-efb01640571a",
+      "name": "Code",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -96,
+        112
+      ],
+      "id": "ab74b632-3211-484e-8613-deaf9ae977d9",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://api.openai.com/v1/files/{{ $json.fileId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        368,
+        128
+      ],
+      "id": "8669a6a5-e323-41aa-a78c-a14807beba3a",
+      "name": "HTTP Request1",
+      "credentials": {
+        "openAiApi": {
+          "id": "akBTWRpVh43bNuZZ",
+          "name": "Biosclase3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a17d55d1-e305-4fbb-9b58-a91930bbba39",
+              "leftValue": "={{ $json.data[0].id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -528,
+        -64
+      ],
+      "id": "31a7c5a5-3f45-46cc-ab67-3d4b973b70af",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        -80
+      ],
+      "id": "b3b8a65d-228e-4c27-9745-2d0118a12917",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 2,
+              "triggerAtMinute": 15
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1088,
+        -64
+      ],
+      "id": "a798685f-b2ce-4a6e-95bc-d8caccd518dc",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d0527423-44e0-418c-b2d5-fde08be012ad",
+  "meta": {
+    "instanceId": "1bda964b89895b6b3cf6829d50ce557c83c0c6547215f4e723b884fb4867837a"
+  },
+  "id": "MUy0NH0JR88LCtvo",
+  "tags": []
+}
