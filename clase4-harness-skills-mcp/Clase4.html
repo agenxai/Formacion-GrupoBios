@@ -127,6 +127,15 @@
   .step{background:var(--panel);border:1px solid var(--panel-bd);border-radius:10px;padding:1vh 1.4vh;font-size:1.9vh;font-weight:700;color:#fff}
   .step.active{background:linear-gradient(135deg,var(--or1),var(--or2));color:#0A3033;border-color:transparent}
   .arrow{color:var(--or1);font-size:2.4vh}
+
+  .tree{background:var(--code-bg);border:1px solid rgba(245,166,35,.3);border-radius:12px;padding:2.6vh 2.4vh;display:flex;flex-direction:column;gap:1.5vh;font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace}
+  .trow{display:flex;align-items:baseline;gap:1.4vh;font-size:2.05vh;min-width:0}
+  .trow .tbranch{color:rgba(255,255,255,.28);flex-shrink:0}
+  .trow .ticon{flex-shrink:0}
+  .trow .tname{color:#fff;font-weight:700;flex-shrink:0}
+  .trow .tdesc{color:var(--muted);font-size:1.65vh;font-family:"Calibri","Segoe UI",system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .trow.root .tname{color:var(--or1);font-size:2.35vh}
+  .trow.req .tname{color:var(--or1)}
 </style>
 </head>
 <body>
@@ -135,7 +144,10 @@
 
   <!-- 1 · PORTADA -->
   <section class="slide active title">
-    <img class="logo" src="./images/cypher-logo.png" alt="Cypher">
+    <div style="display:flex;align-items:center;gap:2.4vh;margin-bottom:4vh">
+      <img class="logo" src="./images/cypher-logo.png" alt="Cypher" style="margin-bottom:0">
+      <img src="./images/grupo-bios.png" alt="Grupo Bios" style="height:6.4vh;background:#fff;border-radius:12px;padding:1vh 1.4vh;box-shadow:0 8px 24px rgba(0,0,0,.4)">
+    </div>
     <span class="pill">Formación en Inteligencia Artificial · Grupo Bios</span>
     <h1>Sesión 4<br><span class="g">Harness, Skills y MCP</span><br>de la conversación a la ejecución</h1>
     <p class="sub">La última sesión formativa: dejar de <em>programar</em> agentes y empezar a <em>operar</em> uno ya construido.<br>Stack: OpenCode · Skills · MCP · N8N</p>
@@ -185,7 +197,7 @@
       <div class="card" style="border-color:rgba(245,80,30,.6)">
         <div class="pieza-tag">Pieza 3</div>
         <h3>🔌 MCP</h3>
-        <p>El <b>protocolo estándar</b> para conectar capacidades externas (hojas, issues, Azure) sin escribir el código de la integración.</p>
+        <p>El <b>protocolo estándar</b> para conectar capacidades externas (issues, diagramas, bases de datos) sin escribir el código de la integración.</p>
         <p style="color:var(--or1);font-size:1.7vh;margin-top:auto">Bloque 2b</p>
       </div>
     </div>
@@ -205,20 +217,31 @@
       <div class="col">
         <p>Hasta hoy <strong>programamos</strong> agentes: escribimos el loop, definimos las tools, montamos la memoria. Ese es el rol con un <strong>framework</strong> (LangGraph, visto en S2).</p>
         <p style="margin-top:1.4vh">Hoy cambiamos de rol: <strong>operamos</strong>. Un <strong>harness</strong> es un agente ya construido que vive sobre el sistema de archivos y la terminal.</p>
-        <ul class="feat" style="margin-top:1.6vh">
-          <li>Lee y escribe <b>archivos</b></li>
-          <li>Corre <b>comandos</b> de terminal</li>
-          <li><b>Itera</b> solo hasta terminar la tarea</li>
-          <li>Pide <b>permiso</b> antes de acciones sensibles</li>
-        </ul>
       </div>
       <div class="col">
-        <div class="imgcard"><img src="./images/HarnessEngineering.png" alt="Harness Engineering: un agente ya construido que opera el computador"></div>
+        <div class="card" style="border-color:rgba(245,80,30,.55)">
+          <h3>Lo que ya sabe hacer</h3>
+          <ul class="feat" style="margin-top:1vh">
+            <li>Lee y escribe <b>archivos</b></li>
+            <li>Corre <b>comandos</b> de terminal</li>
+            <li><b>Itera</b> solo hasta terminar la tarea</li>
+            <li>Pide <b>permiso</b> antes de acciones sensibles</li>
+          </ul>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- 5 · HARNESS vs FRAMEWORK -->
+  <!-- 5 · EL MAPA DE LA SESIÓN -->
+  <section class="slide">
+    <div class="kicker">Pieza 1 · El Coding Agent</div>
+    <h2>El <span class="g">mapa</span> de la sesión</h2>
+    <div class="accentbar"></div>
+    <div class="imgcard grow" style="min-height:0"><img src="./images/HarnessEngineering.png" alt="El agente de código al centro, extendido con Skills, MCPs, memoria y ejecución" style="max-height:100%"></div>
+    <p style="margin:1.6vh auto 0;max-width:75%;color:var(--muted);text-align:center;font-size:2vh">El agente de código al centro — puede ser Claude Code, Codex u OpenCode. Alrededor, las piezas que recorremos hoy: <span class="or">Skills</span>, <span class="or">MCPs</span>, memoria y ejecución sobre la terminal.</p>
+  </section>
+
+  <!-- 6 · HARNESS vs FRAMEWORK -->
   <section class="slide">
     <div class="kicker">Pieza 1 · El Coding Agent</div>
     <h2>Framework <span class="g">vs.</span> Harness</h2>
@@ -229,8 +252,8 @@
         <h3>Framework (LangGraph, CrewAI…)</h3>
         <ul class="feat">
           <li>Librería que <b>tú programas</b></li>
-          <li>Vos ensamblás el loop, las tools, la memoria</li>
-          <li>Construís el agente <b>desde cero</b></li>
+          <li>Tú ensamblas el loop, las tools, la memoria</li>
+          <li>Construyes el agente <b>desde cero</b></li>
           <li>Control total, más trabajo</li>
         </ul>
       </div>
@@ -238,9 +261,9 @@
         <div class="icon">🤖</div>
         <h3>Harness (Claude Code, Codex, OpenCode)</h3>
         <ul class="feat">
-          <li>Agente <b>ya construido</b> que vos operás</li>
+          <li>Agente <b>ya construido</b> que tú operas</li>
           <li>Ya sabe leer archivos y correr comandos</li>
-          <li>Lo extendés con <b>Skills</b> y <b>MCP</b></li>
+          <li>Lo extiendes con <b>Skills</b> y <b>MCP</b></li>
           <li>Menos control, más velocidad</li>
         </ul>
       </div>
@@ -248,7 +271,7 @@
     <p style="margin-top:2vh;color:var(--muted)">El harness no reemplaza al framework — <span class="or">resuelve un problema distinto</span>: operar el computador, no programar el loop.</p>
   </section>
 
-  <!-- 6 · CÓMO PIENSA -->
+  <!-- 7 · CÓMO PIENSA -->
   <section class="slide">
     <div class="kicker">Pieza 1 · El Coding Agent</div>
     <h2>Cómo "<span class="g">piensa</span>" un harness</h2>
@@ -269,15 +292,16 @@
         </div>
       </div>
       <div class="col">
+        <div class="imgcard" style="margin-bottom:1.6vh"><img src="./images/react-loop.gif" alt="Bucle ReAct: pensamiento, acción y observación" style="max-height:34vh"></div>
         <div class="card" style="border-color:rgba(245,166,35,.55)">
           <h3>La pieza nueva: el permiso</h3>
-          <p>Antes de escribir un archivo o correr un comando sensible, el harness te lo muestra y pide <b>aprobación</b>. Vos siempre tenés la última palabra. Por eso es seguro para operar.</p>
+          <p>Antes de escribir un archivo o correr un comando sensible, el harness te lo muestra y pide <b>aprobación</b>. Tú siempre tienes la última palabra. Por eso es seguro para operar.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- 7 · AGENTS.MD -->
+  <!-- 8 · AGENTS.MD -->
   <section class="slide">
     <div class="kicker">Pieza 1 · El Coding Agent</div>
     <h2><span class="g">AGENTS.md</span> — el contexto del proyecto</h2>
@@ -286,6 +310,7 @@
       <div class="col">
         <p>El harness lee solo un archivo de contexto al arrancar: <code>AGENTS.md</code>. Es el <strong>system prompt del proyecto</strong>.</p>
         <p style="margin-top:1.4vh">Instrucciones de fondo que el harness carga en cada turno: quién es el cliente, quiénes son los participantes, qué ya dimos, qué falta, qué convenciones seguimos.</p>
+        <p style="margin-top:1.4vh;color:var(--muted);font-size:1.95vh">El nombre depende del harness: OpenCode y Codex leen <code>AGENTS.md</code>; en Claude Code el equivalente se llama <span class="or">CLAUDE.md</span>. Mismo patrón, distinto nombre.</p>
         <div class="card" style="margin-top:1.6vh;border-color:rgba(245,166,35,.55)">
           <p style="font-size:2vh"><span class="or">Autorreferencial:</span> el <code>AGENTS.md</code> de <b>este repo</b> es el ejemplo. Lo que el harness carga al operar la formación es justamente el documento que ustedes están leyendo.</p>
         </div>
@@ -311,31 +336,31 @@ Núcleo técnico (~4) + Champions no-software (~11)…
     </div>
   </section>
 
-  <!-- 8 · EJEMPLOS DE HARNESSES -->
+  <!-- 9 · EJEMPLOS DE HARNESSES -->
   <section class="slide">
     <div class="kicker">Pieza 1 · El Coding Agent</div>
     <h2>Tres harnesses, <span class="g">un patrón</span></h2>
     <div class="accentbar"></div>
-    <div class="logos grow">
-      <div class="l">
-        <img src="./images/claude.png" alt="Claude Code">
-        <span>Claude Code</span>
+    <div class="logos grow" style="gap:6vw">
+      <div class="l" style="gap:2vh">
+        <img src="./images/claude.png" alt="Claude Code" style="height:24vh;padding:2.4vh 3vh">
+        <span style="font-size:2.6vh">Claude Code</span>
       </div>
-      <div class="l">
-        <img src="./images/Codex.png" alt="Codex">
-        <span>Codex (OpenAI)</span>
+      <div class="l" style="gap:2vh">
+        <img src="./images/Codex.png" alt="Codex" style="height:24vh;padding:2.4vh 3vh">
+        <span style="font-size:2.6vh">Codex (OpenAI)</span>
       </div>
-      <div class="l">
-        <img src="./images/Opencode.png" alt="OpenCode">
-        <span>OpenCode</span>
+      <div class="l" style="gap:2vh">
+        <img src="./images/Opencode.png" alt="OpenCode" style="height:24vh;padding:2.4vh 3vh">
+        <span style="font-size:2.6vh">OpenCode</span>
       </div>
     </div>
     <div class="card" style="margin-top:2.4vh">
-      <p style="text-align:center">Hoy operamos <span class="or">OpenCode</span> — pero lo que ven se replica con cualquiera. Cambiás el binario, no el patrón.</p>
+      <p style="text-align:center">Hoy operamos <span class="or">OpenCode</span> — pero lo que ven se replica con cualquiera. Cambias el binario, no el patrón.</p>
     </div>
   </section>
 
-  <!-- 9 · PRÁCTICA TRANSVERSAL -->
+  <!-- 10 · PRÁCTICA TRANSVERSAL -->
   <section class="slide">
     <div class="kicker">Pieza 1 · Práctica</div>
     <h2>Práctica <span class="g">transversal</span> — todos operan</h2>
@@ -343,25 +368,23 @@ Núcleo técnico (~4) + Champions no-software (~11)…
     <div class="cols center">
       <div class="col">
         <p class="quote">Una tarea cotidiana, sin código.</p>
-        <p style="margin-top:1.6vh">El facilitador le pide al harness que organice una carpeta de notas sueltas y redacte un acta formateada en un solo archivo.</p>
-        <ul class="feat" style="margin-top:1.4vh">
+        <ul class="feat" style="margin-top:1.6vh">
           <li>Técnicos y no-técnicos <b>juntos</b></li>
           <li>Nadie escribe una línea de código</li>
           <li>El harness lee, decide, pide permiso, escribe</li>
         </ul>
-        <p style="margin-top:1.4vh;color:var(--muted)">El objetivo: que los no-software vean que <span class="or">el harness les sirve sin programar</span>, antes de que el Bloque 2 se ponga más técnico.</p>
       </div>
       <div class="col">
         <div class="card" style="border-color:rgba(245,80,30,.55)">
           <div class="n">El momento "oh"</div>
           <h3>Cambien "notas" por "informes de mi área"</h3>
-          <p>Si en vez de <code>practica-transversal/</code> apuntan el harness a la carpeta de informes de Mantenimiento, Compras, Logística o Producción — el harness hace lo mismo. Organiza, redacta, formatea. Sin que nadie programme nada.</p>
+          <p>Si en vez de <code>practica-transversal/</code> apuntan el harness a la carpeta de informes de Mantenimiento, Compras, Logística o Producción — el harness hace lo mismo. Organiza, redacta, formatea. Sin que nadie programe nada.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- 10 · PUENTE A SKILLS -->
+  <!-- 11 · PUENTE A SKILLS -->
   <section class="slide">
     <div class="kicker">Pieza 1 → Pieza 2</div>
     <h2>¿Y si quiero que <span class="g">siempre</span> sepa hacerlo?</h2>
@@ -373,12 +396,12 @@ Núcleo técnico (~4) + Champions no-software (~11)…
         <p class="quote g" style="margin-top:1.6vh">Eso es una <span style="color:#fff">Skill</span>.</p>
       </div>
       <div class="col">
-        <div class="imgcard dark"><img src="./images/MCP_SKILL_AGENTS.png" alt="Cómo se relacionan Agent, Skills y MCP" style="max-height:48vh;filter:drop-shadow(0 12px 30px rgba(0,0,0,.5))"></div>
+        <div class="imgcard dark"><img src="./images/Skills_1.png" alt="Skills: se escriben una vez, se usan siempre" style="max-height:48vh;border-radius:12px;filter:drop-shadow(0 12px 30px rgba(0,0,0,.5))"></div>
       </div>
     </div>
   </section>
 
-  <!-- 11 · PIEZA 2 — QUÉ ES UNA SKILL -->
+  <!-- 12 · PIEZA 2 — QUÉ ES UNA SKILL -->
   <section class="slide">
     <div class="kicker">Pieza 2 · Skills</div>
     <div class="pieza-tag">Skills</div>
@@ -387,21 +410,28 @@ Núcleo técnico (~4) + Champions no-software (~11)…
     <div class="cols center">
       <div class="col">
         <p>Una Skill es un <strong>paquete de conocimiento procedimental</strong> que el harness carga cuando la conversación entra en su dominio.</p>
-        <p style="margin-top:1.4vh">Tres palabras clave:</p>
-        <ul class="feat" style="margin-top:1.2vh">
-          <li><b>Replicable</b> — la misma Skill sirve en cualquier proyecto donde el dominio aplique</li>
-          <li><b>Determinista</b> — los pasos que indica son claros, no creativos</li>
-          <li><b>Procedimental</b> — describe <b>cómo</b> hacer algo, paso a paso</li>
-        </ul>
-        <p style="margin-top:1.4vh;color:var(--muted)">No es una tool (eso era S2). No es un documento (eso era RAG, S3). Es <span class="or">conocimiento empaquetado</span> que dice al harness "cuando te pidan X, hacé así".</p>
+        <p style="margin-top:1.4vh;color:var(--muted)">No es una tool (eso era S2). No es un documento (eso era RAG, S3). Es <span class="or">conocimiento empaquetado</span> que dice al harness "cuando te pidan X, haz así".</p>
       </div>
       <div class="col">
-        <div class="imgcard"><img src="./images/Skills_1.png" alt="Qué es una Skill: conocimiento procedimental empaquetado"></div>
+        <div class="cards c1" style="gap:1.4vh">
+          <div class="card" style="padding:1.8vh">
+            <h3>🔁 Replicable</h3>
+            <p>La misma Skill sirve en cualquier proyecto donde el dominio aplique.</p>
+          </div>
+          <div class="card" style="padding:1.8vh">
+            <h3>🎯 Determinista</h3>
+            <p>Los pasos que indica son claros, no creativos.</p>
+          </div>
+          <div class="card" style="padding:1.8vh">
+            <h3>📋 Procedimental</h3>
+            <p>Describe <b>cómo</b> hacer algo, paso a paso.</p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- 12 · PARA QUÉ SIRVEN -->
+  <!-- 13 · PARA QUÉ SIRVEN -->
   <section class="slide">
     <div class="kicker">Pieza 2 · Skills</div>
     <h2>Para qué <span class="g">sirven</span></h2>
@@ -410,7 +440,7 @@ Núcleo técnico (~4) + Champions no-software (~11)…
       <div class="card">
         <div class="icon">🔁</div>
         <h3>Repetibilidad</h3>
-        <p>Una vez que definís "cómo se organiza un acta", el harness lo hace <b>igual</b> cada vez, sin que se lo vuelvas a explicar.</p>
+        <p>Una vez que defines "cómo se organiza un acta", el harness lo hace <b>igual</b> cada vez, sin que se lo vuelvas a explicar.</p>
       </div>
       <div class="card">
         <div class="icon">📦</div>
@@ -426,14 +456,14 @@ Núcleo técnico (~4) + Champions no-software (~11)…
     <p style="margin-top:2vh;color:var(--muted)">En sus proyectos de Bios: la Skill "analista operativo" orquesta <span class="or">bios_ops.db</span> + el vector store de OpenAI. La adapta al dominio, no la reescribe.</p>
   </section>
 
-  <!-- 13 · ANATOMÍA -->
+  <!-- 14 · ANATOMÍA -->
   <section class="slide">
     <div class="kicker">Pieza 2 · Skills</div>
     <h2>Anatomía de un <span class="g">SKILL.md</span></h2>
     <div class="accentbar"></div>
     <div class="cols center">
       <div class="col" style="flex:.95">
-        <div class="imgcard"><img src="./images/Skill anatomy.png" alt="Anatomía de un SKILL.md: frontmatter, instrucciones, scripts"></div>
+        <div class="imgcard"><img src="./images/Skill anatomy.png" alt="Anatomía de un SKILL.md: frontmatter, instrucciones, scripts" style="max-height:66vh"></div>
       </div>
       <div class="col">
         <p>Tres partes, igual que un archivo de config:</p>
@@ -455,7 +485,44 @@ Núcleo técnico (~4) + Champions no-software (~11)…
     </div>
   </section>
 
-  <!-- 14 · CÓMO SE CONSTRUYEN + DÓNDE -->
+  <!-- 15 · LA CARPETA DE UNA SKILL -->
+  <section class="slide">
+    <div class="kicker">Pieza 2 · Skills</div>
+    <h2>La <span class="g">carpeta</span> de una Skill</h2>
+    <div class="accentbar"></div>
+    <div class="cols center">
+      <div class="col" style="flex:1.25">
+        <div class="tree">
+          <div class="trow root"><span class="ticon">📁</span><span class="tname">skill-analista-operativo/</span><span class="tdesc">una carpeta = una Skill</span></div>
+          <div class="trow req"><span class="tbranch">├─</span><span class="ticon">📄</span><span class="tname">SKILL.md</span><span class="tdesc">obligatorio — frontmatter + instrucciones</span></div>
+          <div class="trow"><span class="tbranch">├─</span><span class="ticon">📁</span><span class="tname">scripts/</span><span class="tdesc">código que el harness invoca como herramientas</span></div>
+          <div class="trow"><span class="tbranch">│&nbsp;&nbsp;&nbsp;├─</span><span class="ticon">🐍</span><span class="tname">bios_ops.py</span><span class="tdesc">las 4 tools canónicas de S2</span></div>
+          <div class="trow"><span class="tbranch">│&nbsp;&nbsp;&nbsp;└─</span><span class="ticon">🐍</span><span class="tname">rag.py</span><span class="tdesc">cliente del vector store de OpenAI</span></div>
+          <div class="trow"><span class="tbranch">├─</span><span class="ticon">📁</span><span class="tname">references/</span><span class="tdesc">documentación de fondo que la Skill consulta</span></div>
+          <div class="trow"><span class="tbranch">├─</span><span class="ticon">📁</span><span class="tname">assets/</span><span class="tdesc">plantillas y archivos de apoyo</span></div>
+          <div class="trow"><span class="tbranch">└─</span><span class="ticon">📄</span><span class="tname">ejemplos.md</span><span class="tdesc">los casos de prueba</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="cards c1" style="gap:1.4vh">
+          <div class="card" style="padding:1.8vh;border-color:rgba(245,80,30,.55)">
+            <h3>📄 Solo SKILL.md es obligatorio</h3>
+            <p>Lo demás se agrega según lo que la Skill necesite llevar consigo.</p>
+          </div>
+          <div class="card" style="padding:1.8vh">
+            <h3>📦 Todo viaja junto</h3>
+            <p>Instrucciones, scripts y plantillas en una sola carpeta versionable en git.</p>
+          </div>
+          <div class="card" style="padding:1.8vh">
+            <h3>⚡ Carga on-demand</h3>
+            <p>El harness la activa solo cuando la conversación calza con su dominio.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 16 · CÓMO SE CONSTRUYEN + DÓNDE -->
   <section class="slide">
     <div class="kicker">Pieza 2 · Skills</div>
     <h2>Cómo se construyen · <span class="g">Dónde se guardan</span></h2>
@@ -477,7 +544,7 @@ Núcleo técnico (~4) + Champions no-software (~11)…
 <span class="tok-p">---</span>
 
 <span class="tok-c"># Instrucciones (el system prompt de la Skill)</span>
-Sos un analista operativo de Grupo Bios…
+Eres un analista operativo de Grupo Bios…
 NUNCA inventes una cifra operativa…</code></pre>
       </div>
       <div class="col">
@@ -492,12 +559,13 @@ NUNCA inventes una cifra operativa…</code></pre>
             <p>En el directorio global del harness. Disponible en cualquier proyecto. Útil para Skills transversales (tu flujo de git, tu estilo de PR).</p>
           </div>
         </div>
-        <p style="margin-top:1.4vh;color:var(--muted);font-size:1.9vh">El harness las detecta solo — no hay que "cargarlas" manualmente. Si el <code>when</code> calza, se activa.</p>
+        <div class="imgcard" style="margin-top:1.4vh"><img src="./images/Skills template.png" alt="Estructura de carpeta de una Skill y carga on-demand" style="max-height:18vh"></div>
+        <p style="margin-top:1.2vh;color:var(--muted);font-size:1.9vh">El harness las detecta solo — no hay que "cargarlas" manualmente. Si el <code>when</code> calza, se activa.</p>
       </div>
     </div>
   </section>
 
-  <!-- 15 · PRÁCTICA SKILL -->
+  <!-- 17 · PRÁCTICA SKILL -->
   <section class="slide">
     <div class="kicker">Pieza 2 · Práctica</div>
     <h2>Práctica: <span class="g">"analista operativo"</span></h2>
@@ -524,24 +592,24 @@ NUNCA inventes una cifra operativa…</code></pre>
     </div>
   </section>
 
-  <!-- 16 · PUENTE A MCP -->
+  <!-- 18 · PUENTE A MCP -->
   <section class="slide">
     <div class="kicker">Pieza 2 → Pieza 3</div>
-    <h2>¿Y si quiero leer una <span class="g">hoja de cálculo</span>?</h2>
+    <h2>¿Y si quiero conectar <span class="g">herramientas externas</span>?</h2>
     <div class="accentbar"></div>
     <div class="cols center">
       <div class="col">
-        <p>Las tools de la Skill son funciones que <strong>vos escribís</strong> (<code>bios_ops.py</code>). El RAG es un endpoint que <strong>vos levantás</strong> (S3).</p>
-        <p style="margin-top:1.4vh">¿Y si lo que querés es leer y escribir sobre la hoja de cálculo que Compras ya usa a diario — sin programar una integración?</p>
+        <p>Las tools de la Skill son funciones que <strong>tú escribes</strong> (<code>bios_ops.py</code>). El RAG es un endpoint que <strong>tú levantas</strong> (S3).</p>
+        <p style="margin-top:1.4vh">¿Y si lo que quieres es que el harness liste tus pendientes en el gestor de tareas, o dibuje el diagrama de un proceso — sin programar una integración?</p>
         <p class="quote g" style="margin-top:1.6vh">Eso es un <span style="color:#fff">MCP</span>.</p>
       </div>
       <div class="col">
-        <div class="imgcard"><img src="./images/SKILLS_MCP.png" alt="De Skills a MCP: conectar capacidades externas"></div>
+        <div class="imgcard"><img src="./images/SKILLS_MCP.png" alt="De Skills a MCP: conectar capacidades externas" style="max-height:60vh"></div>
       </div>
     </div>
   </section>
 
-  <!-- 17 · PIEZA 3 — QUÉ ES MCP -->
+  <!-- 19 · PIEZA 3 — QUÉ ES MCP -->
   <section class="slide">
     <div class="kicker">Pieza 3 · MCP</div>
     <div class="pieza-tag">Model Context Protocol</div>
@@ -549,23 +617,21 @@ NUNCA inventes una cifra operativa…</code></pre>
     <div class="accentbar"></div>
     <div class="cols center">
       <div class="col" style="flex:1.1">
-        <p><strong>Model Context Protocol</strong> — un estándar abierto para que cualquier agente hable con cualquier herramienta externa, <strong>sin que vos escribas el código de la integración</strong>.</p>
-        <p style="margin-top:1.4vh">Vos <b>configurás la conexión</b> (auth, alcance). El harness hace el resto: descubre qué puede hacer el servidor MCP y lo invoca como una herramienta más.</p>
+        <p><strong>Model Context Protocol</strong> — un estándar abierto para que cualquier agente hable con cualquier herramienta externa, <strong>sin que tú escribas el código de la integración</strong>.</p>
+        <p style="margin-top:1.4vh">Tú <b>configuras la conexión</b> (auth, alcance). El harness hace el resto: descubre qué puede hacer el servidor MCP y lo invoca como una herramienta más.</p>
         <div class="metaphor" style="margin-top:1.6vh">
           <span class="chip">🔌 MCP = USB-C de los agentes</span>
         </div>
         <p style="margin-top:1.4vh;color:var(--muted);font-size:1.9vh">Un conector estándar. Antes cada sistema tenía su cable; ahora todos hablan el mismo protocolo.</p>
       </div>
       <div class="col">
-        <div class="imgcard dark" style="text-align:center">
-          <img src="./images/MCP_Logo.png" alt="Logo de Model Context Protocol" style="max-height:20vh">
-          <p style="margin-top:1.6vh;color:var(--muted);font-size:1.8vh">Anthropic, 2024 — abierto y adoptado por OpenAI, Cursor, Claude Code, OpenCode…</p>
-        </div>
+        <div class="imgcard"><img src="./images/MCP_2.png" alt="Arquitectura MCP dibujada como un hub USB-C: hosts, clientes y servidores" style="max-height:40vh"></div>
+        <p style="margin-top:1.2vh;color:var(--muted);font-size:1.7vh;text-align:center">Anthropic, 2024 — abierto y adoptado por OpenAI, Cursor, Claude Code, OpenCode…</p>
       </div>
     </div>
   </section>
 
-  <!-- 18 · POR QUÉ SE CREÓ -->
+  <!-- 20 · POR QUÉ SE CREÓ -->
   <section class="slide">
     <div class="kicker">Pieza 3 · MCP</div>
     <h2>Por qué se <span class="g">creó</span></h2>
@@ -582,59 +648,68 @@ NUNCA inventes una cifra operativa…</code></pre>
     </div>
   </section>
 
-  <!-- 19 · EL ESTÁNDAR + DÓNDE -->
+  <!-- 21 · EL ESTÁNDAR + DÓNDE -->
   <section class="slide">
     <div class="kicker">Pieza 3 · MCP</div>
     <h2>El estándar de comunicación · <span class="g">Dónde se guarda</span></h2>
     <div class="accentbar"></div>
     <div class="cols center">
       <div class="col" style="flex:1.05">
-        <p><strong>Es el estándar</strong> porque lo adoptaron todos los harnesses principales — Claude Code, Codex, Cursor, OpenCode. Escribís un servidor MCP una vez y sirve para todos.</p>
+        <p><strong>Es el estándar</strong> porque lo adoptaron todos los harnesses principales — Claude Code, Codex, Cursor, OpenCode. Escribes un servidor MCP una vez y sirve para todos.</p>
         <p style="margin-top:1.4vh"><strong>Dónde se guarda / configura:</strong></p>
         <ul class="feat" style="margin-top:1.2vh">
           <li>El <b>servidor MCP</b> es un proceso (local o remoto) que expone capacidades</li>
           <li>La <b>configuración</b> vive en el archivo de config del harness (no en <code>.env</code> del repo)</li>
           <li>La <b>auth</b> (OAuth, service account, API key) va en ese mismo config — nunca en git</li>
         </ul>
-        <p style="margin-top:1.4vh;color:var(--muted);font-size:1.9vh">El harness descubre las capacidades del servidor MCP al arrancar — no tenés que declararlas a mano.</p>
+        <p style="margin-top:1.4vh;color:var(--muted);font-size:1.9vh">El harness descubre las capacidades del servidor MCP al arrancar — no tienes que declararlas a mano.</p>
       </div>
       <div class="col">
-        <div class="imgcard"><img src="./images/MCP_2.png" alt="Cómo el harness se conecta a un servidor MCP"></div>
+        <pre><code><span class="tok-c">// config del harness (conceptual — fuera del repo)</span>
+{
+  <span class="tok-k">"mcp"</span>: {
+    <span class="tok-c">// remoto, sin credenciales — solo la URL:</span>
+    <span class="tok-k">"drawio"</span>: {
+      <span class="tok-k">"url"</span>: <span class="tok-s">"https://mcp.draw.io/mcp"</span>
+    },
+    <span class="tok-c">// con auth — el token vive aquí, nunca en git:</span>
+    <span class="tok-k">"linear"</span>: {
+      <span class="tok-k">"command"</span>: <span class="tok-s">"npx"</span>,
+      <span class="tok-k">"args"</span>: [<span class="tok-s">"-y"</span>, <span class="tok-s">"&lt;servidor-mcp-linear&gt;"</span>],
+      <span class="tok-k">"env"</span>: {
+        <span class="tok-k">"LINEAR_API_KEY"</span>: <span class="tok-s">"&lt;token&gt;"</span>
+      }
+    }
+  }
+}</code></pre>
+        <p style="margin-top:1.2vh;color:var(--muted);font-size:1.7vh">🔒 La auth nunca va en git. Si se expone, rota al instante — borrar el commit no basta.</p>
       </div>
     </div>
   </section>
 
-  <!-- 20 · PRÁCTICA MCP -->
+  <!-- 22 · PRÁCTICA MCP -->
   <section class="slide">
     <div class="kicker">Pieza 3 · Práctica</div>
-    <h2>Práctica: <span class="g">tres MCPs</span></h2>
+    <h2>Práctica: <span class="g">dos MCPs</span></h2>
     <div class="accentbar"></div>
-    <div class="cards c3 grow">
+    <div class="cards c2 grow">
       <div class="card">
         <div class="icon">📋</div>
         <h3>Linear MCP</h3>
         <p class="or" style="font-size:1.7vh">Referencia — "así lo usamos nosotros"</p>
-        <p>Leemos issues de Linear, nuestro sistema de gestión de trabajo. Caso de uso real de la agencia.</p>
-        <p style="font-size:1.8vh;color:var(--muted);margin-top:auto">Sin demo en vivo — se muestra config y se narra.</p>
+        <p>Leemos issues de Linear, nuestro sistema de gestión de trabajo. Caso de uso real de la agencia: el harness lista los pendientes hablando.</p>
       </div>
       <div class="card" style="border-color:rgba(245,80,30,.6)">
-        <div class="icon">📊</div>
-        <h3>Google Sheets / Drive</h3>
-        <p class="or" style="font-size:1.7vh">Demo en vivo</p>
-        <p>El harness <b>lee y escribe</b> sobre una hoja real. La misma herramienta que Compras, Logística y Producción ya usan a diario.</p>
-        <p style="font-size:1.8vh;color:var(--muted);margin-top:auto">Cuenta Google de la agencia — nunca de Bios en clase.</p>
-      </div>
-      <div class="card">
-        <div class="icon">☁️</div>
-        <h3>Azure MCP Server</h3>
-        <p class="or" style="font-size:1.7vh">Mención conceptual</p>
-        <p>Expone recursos de Azure (Key Vault, Storage, Cosmos DB). Mismo patrón que Sheets. Cuando TI les habilite Azure, igual.</p>
-        <p style="font-size:1.8vh;color:var(--muted);margin-top:auto">Sin demo — no tenemos cuenta Azure propia.</p>
+        <div class="icon">📐</div>
+        <h3>draw.io MCP</h3>
+        <p class="or" style="font-size:1.7vh">Demo en vivo — diagramas hablando</p>
+        <p>El harness dibuja el proceso de un dominio de Bios con la tool <b>create_diagram</b> (XML de draw.io o Mermaid) y lo deja listo para editar en draw.io.</p>
+        <p style="font-size:1.85vh;color:var(--muted)">Endpoint oficial alojado (<code>mcp.draw.io/mcp</code>) — sin cuenta ni credenciales.</p>
       </div>
     </div>
   </section>
 
-  <!-- 21 · CIERRE N8N -->
+  <!-- 23 · CIERRE N8N -->
   <section class="slide">
     <div class="kicker">Cierre — el momento más importante</div>
     <div class="pieza-tag">n8n-cli + harness</div>
@@ -647,44 +722,62 @@ NUNCA inventes una cifra operativa…</code></pre>
         <ul class="feat" style="margin-top:1.2vh">
           <li>El harness invoca la CLI: <b>crea</b>, <b>configura</b>, <b>activa</b></li>
           <li>Disparamos el webhook → el flujo corre</li>
-          <li>Escribe su salida en la Sheet del Bloque 2</li>
+          <li>Escribe su salida en una hoja de cálculo <b>vía nodo nativo de n8n</b></li>
         </ul>
         <p style="margin-top:1.4vh;color:var(--muted)">El harness <span class="or">no reemplaza n8n — lo opera</span>. n8n sigue siendo donde vive el flujo.</p>
       </div>
       <div class="col">
-        <div class="imgcard"><img src="./images/Skills_MCP_2.png" alt="El harness armando un flujo de n8n hablando"></div>
+        <div class="stepline" style="flex-direction:column;align-items:flex-start;gap:1.1vh">
+          <div class="step active">🗣️ 1 · El facilitador habla</div>
+          <div class="arrow">↓</div>
+          <div class="step">🤖 2 · El harness invoca la CLI de n8n</div>
+          <div class="arrow">↓</div>
+          <div class="step">⚙️ 3 · Crea, configura y activa el workflow</div>
+          <div class="arrow">↓</div>
+          <div class="step">🔔 4 · Webhook manual → ejecución en la UI de n8n</div>
+          <div class="arrow">↓</div>
+          <div class="step">📊 5 · La salida cae en una hoja — nodo nativo de n8n</div>
+        </div>
+        <div class="card" style="margin-top:1.6vh;border-color:rgba(245,166,35,.55)">
+          <p style="font-size:1.8vh"><span class="or">Plan B:</span> si el harness no responde en 60 s, se importa <code>n8n/plantilla-cierre-rescate.json</code> y se narra. Nunca se presenta la plantilla como armada en vivo.</p>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- 22 · LAS TRES PIEZAS -->
+  <!-- 24 · LAS TRES PIEZAS -->
   <section class="slide">
     <div class="kicker">Recap</div>
     <h2>Las <span class="g">tres piezas</span> en una frase</h2>
     <div class="accentbar"></div>
-    <div class="cards c3 grow">
-      <div class="card" style="border-color:rgba(245,80,30,.6)">
-        <div class="pieza-tag">Pieza 1</div>
-        <h3>🤖 Coding Agent</h3>
-        <p>Un agente ya construido que <b>opera tu computador</b>. El loop, las tools básicas (leer, escribir, correr) ya vienen incluidas.</p>
+    <div class="cols center">
+      <div class="col">
+        <div class="cards c1" style="gap:1.2vh">
+          <div class="card" style="padding:1.6vh;border-color:rgba(245,80,30,.6)">
+            <h3>🤖 Pieza 1 · Coding Agent</h3>
+            <p>Un agente ya construido que <b>opera tu computador</b>. El loop y las tools básicas ya vienen incluidas.</p>
+          </div>
+          <div class="card" style="padding:1.6vh;border-color:rgba(245,80,30,.6)">
+            <h3>🧩 Pieza 2 · Skills</h3>
+            <p>Conocimiento <b>procedimental empaquetado</b> que el agente carga cuando entra en un dominio. Tú lo escribes una vez.</p>
+          </div>
+          <div class="card" style="padding:1.6vh;border-color:rgba(245,80,30,.6)">
+            <h3>🔌 Pieza 3 · MCP</h3>
+            <p>El <b>protocolo estándar</b> para conectar herramientas externas sin escribir el código de la integración.</p>
+          </div>
+        </div>
       </div>
-      <div class="card" style="border-color:rgba(245,80,30,.6)">
-        <div class="pieza-tag">Pieza 2</div>
-        <h3>🧩 Skills</h3>
-        <p>Conocimiento <b>procedimental empaquetado</b> que el agente carga cuando entra en un dominio. Vos lo escribís una vez.</p>
+      <div class="col">
+        <div class="imgcard"><img src="./images/MCP_SKILL_AGENTS.png" alt="Los tres artefactos de texto lado a lado: tool MCP, SKILL.md y AGENTS.md" style="max-height:34vh"></div>
+        <p style="margin-top:1vh;color:var(--muted);font-size:1.7vh;text-align:center">Las tres piezas, vistas como los archivos que el harness consume: tool MCP · SKILL.md · AGENTS.md</p>
+        <div class="card" style="margin-top:1.4vh;border-color:rgba(245,166,35,.55)">
+          <p style="text-align:center;font-size:2.1vh"><span class="or">Agente</span> + <span class="or">Skill</span> + <span class="or">MCP</span> = el patrón que van a operar en sus proyectos reales durante el acompañamiento.</p>
+        </div>
       </div>
-      <div class="card" style="border-color:rgba(245,80,30,.6)">
-        <div class="pieza-tag">Pieza 3</div>
-        <h3>🔌 MCP</h3>
-        <p>El <b>protocolo estándar</b> para conectar herramientas externas sin escribir el código de la integración.</p>
-      </div>
-    </div>
-    <div class="card" style="margin-top:2vh;border-color:rgba(245,166,35,.55)">
-      <p style="text-align:center;font-size:2.4vh"><span class="or">Agente</span> + <span class="or">Skill</span> + <span class="or">MCP</span> = el patrón que van a operar en sus proyectos reales durante el acompañamiento.</p>
     </div>
   </section>
 
-  <!-- 23 · ENTREGABLES -->
+  <!-- 25 · ENTREGABLES -->
   <section class="slide">
     <div class="kicker">Lo que se llevan hoy</div>
     <h2>Tres <span class="g">entregables</span></h2>
@@ -708,7 +801,7 @@ NUNCA inventes una cifra operativa…</code></pre>
     </div>
   </section>
 
-  <!-- 24 · PUENTE -->
+  <!-- 26 · PUENTE -->
   <section class="slide title">
     <img class="logo" src="./images/cypher-logo.png" alt="Cypher">
     <span class="pill">S5 — S7 · Acompañamiento</span>

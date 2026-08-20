@@ -5,6 +5,8 @@ _Programa Cypher · Stack: OpenCode · Skills · MCP · N8N_
 
 <p align="center">
   <img src="./images/cypher-logo.png" alt="Cypher" width="240">
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./images/grupo-bios.png" alt="Grupo Bios" width="200">
 </p>
 
 > **Cómo usar este documento.** Es el *ebook* de la cuarta y última clase
@@ -50,7 +52,7 @@ _Programa Cypher · Stack: OpenCode · Skills · MCP · N8N_
    - 5.2 [Por qué se creó — el problema M×N](#52-por-qué-se-creó--el-problema-mn)
    - 5.3 [El estándar de comunicación agente↔herramienta](#53-el-estándar-de-comunicación-agenteherramienta)
    - 5.4 [Dónde se guarda y cómo se conecta](#54-dónde-se-guarda-y-cómo-se-conecta)
-   - 5.5 [Práctica: tres MCPs](#55-práctica-tres-mcps)
+   - 5.5 [Práctica: dos MCPs](#55-práctica-dos-mcps)
 6. [Cierre — n8n-cli + harness](#6-cierre--n8n-cli--harness)
 7. [Las tres piezas en una frase](#7-las-tres-piezas-en-una-frase)
 8. [Entregables](#8-entregables)
@@ -83,7 +85,7 @@ empezamos a operarlo.
 
 ## 2. La pregunta de hoy
 
-Las tres sesiones anteriores te dejaron con una capacidad concreta: sabés
+Las tres sesiones anteriores te dejaron con una capacidad concreta: sabes
 **programar** un agente. Escribir el loop, definir las tools, montar la
 memoria, enchufarle un RAG. Eso es mucho — y es justo lo que necesitarás
 para entender tus proyectos.
@@ -95,13 +97,23 @@ permiso. Y extendiendo ese agente con dos capacidades nuevas:
 
 - **Skills** — conocimiento procedimental empaquetado que el agente carga
   cuando entra en un dominio.
-- **MCP** — un protocolo estándar para conectar capacidades externas (una
-  hoja de cálculo, un sistema de tickets, un recurso de Azure) sin que vos
-  escribas el código de la integración.
+- **MCP** — un protocolo estándar para conectar capacidades externas (un
+  sistema de tickets, una herramienta de diagramas, una base de datos) sin
+  que tú escribas el código de la integración.
 
 Ese es el salto de hoy. Y el cierre lo lleva al territorio más concreto: el
 mismo harness armando una automatización de n8n **hablando**, en 3-5
 minutos lo que antes tomaba 20-30 minutos de arrastrar nodos.
+
+El mapa completo de la sesión cabe en una imagen — el **agente de código al
+centro** (puede ser Claude Code, Codex u OpenCode), extendido por las
+piezas que vamos a recorrer: **Skills** a la izquierda, **MCPs** arriba, la
+**ejecución** sobre la terminal abajo y la memoria del contexto a la
+derecha:
+
+<p align="center">
+  <img src="./images/HarnessEngineering.png" alt="Mapa de la sesión: el agente de código al centro, extendido con Skills, MCPs, memoria y ejecución" width="720">
+</p>
 
 > **El arco narrativo explícito:**
 >
@@ -113,14 +125,10 @@ minutos lo que antes tomaba 20-30 minutos de arrastrar nodos.
 
 ## 3. Pieza 1 · El Coding Agent
 
-<p align="center">
-  <img src="./images/HarnessEngineering.png" alt="Harness Engineering: un agente ya construido que opera el computador" width="720">
-</p>
-
 ### 3.1 ¿Qué es un harness?
 
 Un **harness** es un agente de IA **ya construido** que opera tu computador.
-No es una librería que vos programás — es un agente que ya sabe hacer un
+No es una librería que tú programas — es un agente que ya sabe hacer un
 conjunto de cosas por su cuenta:
 
 - **Leer y escribir archivos** del sistema.
@@ -148,13 +156,13 @@ vimos en S2:
 
 | | **Framework** (LangGraph, CrewAI, AutoGen) | **Harness** (Claude Code, Codex, OpenCode) |
 |---|---|---|
-| Qué es | Librería que vos programás | Agente ya construido que vos operás |
-| Qué hacés vos | Ensablás el loop, las tools, la memoria | Lo instalás, lo configurás, le hablás |
-| El loop ReAct | Lo escribís a mano (S2) o lo invocás (`create_react_agent`) | Ya vive dentro del harness |
-| Las tools | Las definís vos, una por una | Ya tiene tools básicas (leer, escribir, correr) + Skills + MCP |
-| La memoria | La montás vos (S2) | El harness la maneja internamente |
+| Qué es | Librería que tú programas | Agente ya construido que tú operas |
+| Qué haces tú | Ensamblas el loop, las tools, la memoria | Lo instalas, lo configuras, le hablas |
+| El loop ReAct | Lo escribes a mano (S2) o lo invocas (`create_react_agent`) | Ya vive dentro del harness |
+| Las tools | Las defines tú, una por una | Ya tiene tools básicas (leer, escribir, correr) + Skills + MCP |
+| La memoria | La montas tú (S2) | El harness la maneja internamente |
 | Control | Total | Menor — más velocidad |
-| Cuándo lo usás | Cuando querés control fino del loop | Cuando querés operar el computador rápido |
+| Cuándo lo usas | Cuando quieres control fino del loop | Cuando quieres operar el computador rápido |
 
 > **El harness no reemplaza al framework — resuelve un problema distinto.**
 > El framework te deja construir un agente a medida. El harness te deja
@@ -170,19 +178,19 @@ La premisa de un harness es simple y poderosa:
 > **Un agente que controla tu computador.**
 
 Eso es lo que cambia respecto a todo lo que vimos antes. En S2, el agente
-consultaba `bios_ops.db` por funciones que vos escribiste. En S3, consultaba
-documentos por un endpoint que vos levantaste. El agente nunca *tocó* tu
-computador — vos le diste herramientas específicas, una por una.
+consultaba `bios_ops.db` por funciones que tú escribiste. En S3, consultaba
+documentos por un endpoint que tú levantaste. El agente nunca *tocó* tu
+computador — tú le diste herramientas específicas, una por una.
 
 El harness, en cambio, **ya tiene herramientas para operar el computador**:
 abrir archivos, listar directorios, correr `git`, correr `python`, crear
-carpetas, escribir documentos. No se las das vos — ya las trae. Vos le
-hablás en lenguaje natural y él decide qué archivos leer, qué comandos
+carpetas, escribir documentos. No se las das tú — ya las trae. Tú le
+hablas en lenguaje natural y él decide qué archivos leer, qué comandos
 correr, qué escribir. Itera hasta terminar.
 
 ```mermaid
 flowchart LR
-    U[👤 Vos] -->|hablás| H[harness]
+    U[👤 Tú] -->|hablas| H[harness]
     H -->|lee| FS[📁 Sistema de archivos]
     H -->|corre| T[💻 Terminal]
     H -->|escribe| FS
@@ -225,22 +233,23 @@ El harness lee un archivo de contexto al arrancar: `AGENTS.md`. Es el
 carga en cada turno para saber quién es el cliente, quiénes son los
 participantes, qué ya se hizo, qué falta, qué convenciones seguir.
 
-<p align="center">
-  <img src="./images/Skill anatomy.png" alt="Anatomía: AGENTS.md es el contexto del proyecto" width="540">
-</p>
-
 > **Autorreferencial.** El `AGENTS.md` de **este repo** es el ejemplo que
 > vamos a usar en clase. Es el archivo que el harness carga al operar la
-> formación — justamente el documento que vos estás leyendo ahora mismo.
-> No es metafórico: es literal. Si abrís este repo en un harness, lo primero
+> formación — justamente el documento que tú estás leyendo ahora mismo.
+> No es metafórico: es literal. Si abres este repo en un harness, lo primero
 > que lee es este contexto.
 
-`AGENTS.md` no es un comentario, **es un prompt**. Lo que escribís ahí
+`AGENTS.md` no es un comentario, **es un prompt**. Lo que escribes ahí
 define cómo se comporta el harness en el proyecto. Si mañana cambian los
-participantes o el temario, cambiás este archivo y el harness opera
-distinto. Es la pieza más lever del harness engineering: cambiar el
-comportamiento del agente **sin tocar código** — solo editando un archivo
-de texto.
+participantes o el temario, cambias este archivo y el harness opera
+distinto. Es la pieza con más apalancamiento del harness engineering:
+cambiar el comportamiento del agente **sin tocar código** — solo editando
+un archivo de texto.
+
+> **¿Y `CLAUDE.md`?** El nombre exacto del archivo depende del harness:
+> OpenCode y Codex leen `AGENTS.md`; Claude Code usa su equivalente,
+> `CLAUDE.md`. El patrón es idéntico — un markdown de contexto en la raíz
+> del repo que el agente carga al arrancar.
 
 ```markdown
 # AGENTS.md — Formación Grupo Bios en IA
@@ -265,7 +274,7 @@ Núcleo técnico (~4) + Champions no-software (~11)…
 La pieza nueva del harness respecto al framework de S2: **el permiso**.
 
 Antes de escribir un archivo o correr un comando sensible, el harness te
-lo muestra y pide **aprobación**. Vos siempre tenés la última palabra. Eso
+lo muestra y pide **aprobación**. Tú siempre tienes la última palabra. Eso
 es lo que lo hace seguro para operar — un agente que puede borrar archivos
 o correr comandos destructivos sin pedir permiso sería peligroso; un
 agente que pide permiso antes es **operable**.
@@ -300,8 +309,8 @@ Hay tres harnesses principales en 2024-2025:
 | **Codex** | OpenAI | El harness de OpenAI; soporta MCP. |
 | **OpenCode** | Open source | El que usamos hoy; soporta Skills y MCP. |
 
-El **patrón es el mismo en los tres**: instalás el binario, lo autenticás
-con tu LLM, le cargás el `AGENTS.md` del repo, le enchufás Skills y MCP. Lo
+El **patrón es el mismo en los tres**: instalas el binario, lo autenticas
+con tu LLM, le cargas el `AGENTS.md` del repo, le enchufas Skills y MCP. Lo
 que cambia es el binario y el proveedor del LLM subyacente. Si mañana Bios
 elige Claude Code en vez de OpenCode, lo que vieron hoy se replica igual.
 
@@ -347,8 +356,9 @@ Skill.**
 ## 4. Pieza 2 · Skills
 
 <p align="center">
-  <img src="./images/MCP_SKILL_AGENTS.png" alt="Cómo se relacionan Agent, Skills y MCP" width="640">
+  <img src="./images/Skills_1.png" alt="Skills: se escriben una vez, se usan siempre" width="640">
 </p>
+<p align="center"><sub><em>La idea central de una Skill: escribirla una vez, usarla siempre.</em></sub></p>
 
 ### 4.1 Qué es una Skill
 
@@ -367,7 +377,7 @@ Tres palabras clave que la definen:
   empaquetado**.
 
 > **No es una tool, no es un documento.** Una tool (S2) es una función que
-> vos programás y el agente invoca. Un documento (S3) es texto que el
+> tú programas y el agente invoca. Un documento (S3) es texto que el
 > agente recupera por similitud semántica. Una Skill es **conocimiento
   procedimental** que el agente carga completo cuando entra en el dominio —
   no lo recupera por similitud, lo carga directo porque el `when` calzó.
@@ -378,20 +388,28 @@ activa solo cuando la conversación entra en su dominio. Así un proyecto
 puede tener muchas Skills, cada una para un dominio distinto, sin que
 todas se carguen en cada turno.
 
+Los tres artefactos de texto que el harness consume, lado a lado — la tool
+que un servidor MCP expone (la veremos en la Pieza 3), el `SKILL.md` y el
+`AGENTS.md`:
+
+<p align="center">
+  <img src="./images/MCP_SKILL_AGENTS.png" alt="Comparación lado a lado: tool MCP, SKILL.md y AGENTS.md" width="640">
+</p>
+
 ### 4.2 Para qué sirve
 
 Tres usos principales:
 
 | Uso | Qué hace la Skill | Ejemplo Bios |
 |---|---|---|
-| **Repetibilidad** | Que el agente haga algo **igual** cada vez, sin que se lo vuelvas a explicar | "Siempre que me pidan un acta, organizá por tema y usá este formato" |
+| **Repetibilidad** | Que el agente haga algo **igual** cada vez, sin que se lo vuelvas a explicar | "Siempre que me pidan un acta, organiza por tema y usa este formato" |
 | **Empaquetar contexto** | Llevar consigo instrucciones + archivos + scripts que el agente no parta de cero | La "analista operativo" carga `bios_ops.py` + `rag.py` + las 4 reglas de enrutamiento |
 | **Compartir entre equipos** | Versionar un procedimiento en git, para que tu equipo lo herede | El equipo de Mantenimiento tiene su Skill; el de Compras, la suya — ambas en el mismo repo |
 
 La lección para los Champions: cuando un procedimiento se repite en su
 área (cómo se organiza un informe de fallas, cómo se arma un plan de
 abastecimiento, cómo se despacha un pedido), **eso es candidato a Skill**.
-Lo escribís una vez, lo versionás, y el harness lo aplica igual cada vez.
+Lo escribes una vez, lo versionas, y el harness lo aplica igual cada vez.
 
 ### 4.3 Anatomía de un `SKILL.md`
 
@@ -427,7 +445,7 @@ language: es
 ```
 
 El campo **`when`** es el más importante — le dice al harness "cuando la
-conversación entre en X, cargame". Si el `when` es ambiguo, la Skill se
+conversación entre en X, cárgame". Si el `when` es ambiguo, la Skill se
 activa a destiempo. Si es preciso, el harness la carga justo cuando hace
 falta.
 
@@ -440,8 +458,8 @@ agente debe seguir cuando la Skill está activa. No reemplaza al
 ```markdown
 # Skill · Analista Operativo — Grupo Bios
 
-Sos un analista operativo de Grupo Bios. Respondes en español, breve y
-operativo. Tenés dos tipos de conocimiento y los orquestás según la pregunta.
+Eres un analista operativo de Grupo Bios. Respondes en español, breve y
+operativo. Tienes dos tipos de conocimiento y los orquestas según la pregunta.
 
 ## Las dos fuentes
 
@@ -453,7 +471,7 @@ operativo. Tenés dos tipos de conocimiento y los orquestás según la pregunta.
 1. NUNCA inventes una cifra operativa → bios_ops.py
 2. NUNCA inventes un procedimiento → rag.py
 3. Si la pregunta cruza → ambas
-4. Si no estás seguro → empezá por la más barata (datos)
+4. Si no estás seguro → empieza por la más barata (datos)
 ```
 
 #### 3 · Scripts / archivos
@@ -475,24 +493,20 @@ skill-analista-operativo/
 Construir una Skill es **escribir un archivo de texto** + los scripts que
 necesite. No hay framework, no hay compilación, no hay build step.
 
-<p align="center">
-  <img src="./images/Skills template.png" alt="Plantilla de un SKILL.md" width="540">
-</p>
-
 Pasos:
 
-1. **Identificá el procedimiento** que querés empaquetar. ¿Qué se repite
-   en tu área? ¿Qué le explicás al agente una y otra vez?
-2. **Escribí el `SKILL.md`** con las tres partes: frontmatter, instrucciones,
+1. **Identifica el procedimiento** que quieres empaquetar. ¿Qué se repite
+   en tu área? ¿Qué le explicas al agente una y otra vez?
+2. **Escribe el `SKILL.md`** con las tres partes: frontmatter, instrucciones,
    scripts referenciados en `context`.
-3. **Escribí los scripts** que la Skill necesita (si los necesita). En
+3. **Escribe los scripts** que la Skill necesita (si los necesita). En
    Python, en bash, lo que sea — el harness los invoca como herramientas.
-4. **Guardá la Skill** en el directorio correcto (ver 4.5).
-5. **Probala** — pedile al harness una pregunta que caiga en el dominio y
-   mirá si la Skill se activa y responde bien.
+4. **Guarda la Skill** en el directorio correcto (ver 4.5).
+5. **Pruébala** — pídele al harness una pregunta que caiga en el dominio y
+   mira si la Skill se activa y responde bien.
 
 > **La lección.** Una Skill es **texto**. No hay magia, no hay SDK, no hay
-> compilación. Escribís un archivo markdown con frontmatter y
+> compilación. Escribes un archivo markdown con frontmatter y
 > instrucciones, y el harness lo carga. Eso es todo. La simplicidad es la
 > virtud — es lo que hace que un Champion no-software pueda escribirla.
 
@@ -510,9 +524,14 @@ manualmente. Al arrancar, escanea los directorios configurados, lee los
 `SKILL.md` que encuentra, y cuando una conversación calza con un `when`,
 activa esa Skill. Si el `when` no calza, la Skill queda inerte.
 
+<p align="center">
+  <img src="./images/Skills template.png" alt="Estructura de carpeta de una Skill: SKILL.md + scripts + referencias; el agente la carga on-demand" width="640">
+</p>
+<p align="center"><sub><em>La carpeta de la Skill (SKILL.md + scripts + referencias) y su carga on-demand: el agente la activa solo cuando calza con la tarea.</em></sub></p>
+
 > **Versionado.** Las Skills locales se versionan en git como cualquier
 > archivo del repo. Eso significa que tu equipo hereda el mismo
-> procedimiento, los cambios se revisan en PR, y podés volver a una versión
+> procedimiento, los cambios se revisan en PR, y puedes volver a una versión
 > anterior si algo se rompe. Es la diferencia con "decirle al agente cómo
 > hacer algo en el chat" — eso se pierde; una Skill se queda.
 
@@ -525,9 +544,16 @@ operativo", que orquesta las **dos fuentes** que ya tenemos:
   fallas, pedidos, turnos.
 - **Vector store de OpenAI** — documentos: políticas, manuales, procedimientos.
 
-<p align="center">
-  <img src="./images/Skills_1.png" alt="La Skill orquestando las dos fuentes" width="540">
-</p>
+```mermaid
+flowchart TD
+    P[❓ Pregunta del usuario] --> S{Skill<br/>analista operativo}
+    S -->|cifra operativa:<br/>inventario, demanda, fallas| DB[tools/bios_ops.py<br/>bios_ops.db]
+    S -->|procedimiento o política| RAG[tools/rag.py<br/>Vector store de OpenAI]
+    S -->|pregunta cruzada N5| DB
+    S -->|pregunta cruzada N5| RAG
+    DB --> R[🧾 Respuesta sintetizada]
+    RAG --> R
+```
 
 La Skill decide cuál fuente consultar según el tipo de pregunta, y cuando
 la pregunta **cruza** — llama las dos y sintetiza. Es la pregunta N5 de S1,
@@ -567,19 +593,19 @@ Champion la adapta a su dominio:
 
 | Dominio | Qué cambia |
 |---|---|
-| Mantenimiento | Conservá `historial_fallas`; el vector store incluye el corpus de mantenimiento |
-| Compras | Conservá `consultar_inventario` + `consultar_demanda`; vector store con políticas de abastecimiento |
-| Logística | Conservá `estado_pedido` + `turnos_muelle`; vector store con procedimientos de despacho |
-| Producción / TD | Conservá `consultar_demanda` + `consultar_produccion`; vector store con planeación de demanda |
+| Mantenimiento | Conserva `historial_fallas`; el vector store incluye el corpus de mantenimiento |
+| Compras | Conserva `consultar_inventario` + `consultar_demanda`; vector store con políticas de abastecimiento |
+| Logística | Conserva `estado_pedido` + `turnos_muelle`; vector store con procedimientos de despacho |
+| Producción / TD | Conserva `consultar_demanda` + `consultar_produccion`; vector store con planeación de demanda |
 
 La adaptación es **editar las instrucciones del `SKILL.md` y descomentar
 la tool relevante** — no reescribir el loop. El loop lo provee el harness.
 
-**Puente a la Pieza 3.** Las tools de la Skill son funciones que **vos
-escribiste** (`bios_ops.py`). El RAG es un endpoint que **vos levantaste**
-(S3). ¿Y si lo que querés es leer y escribir sobre la hoja de cálculo que
-Compras ya usa a diario — **sin programar una integración**? **Eso es un
-MCP.**
+**Puente a la Pieza 3.** Las tools de la Skill son funciones que **tú
+escribiste** (`bios_ops.py`). El RAG es un endpoint que **tú levantaste**
+(S3). ¿Y si lo que quieres es que el harness use una herramienta externa
+que tu equipo ya usa a diario — el gestor de tareas, la herramienta de
+diagramas — **sin programar una integración**? **Eso es un MCP.**
 
 ---
 
@@ -593,7 +619,7 @@ MCP.**
 
 **MCP — Model Context Protocol.** Un estándar abierto, publicado por
 Anthropic en 2024, para que **cualquier agente** hable con **cualquier
-herramienta externa**, sin que vos escribas el código de la integración.
+herramienta externa**, sin que tú escribas el código de la integración.
 
 La metáfora que más ayuda:
 
@@ -606,14 +632,18 @@ herramientas: un solo protocolo, y cualquier herramienta que lo exponga se
 conecta con cualquier agente que lo hable.
 
 <p align="center">
+  <img src="./images/MCP_2.png" alt="Arquitectura MCP dibujada como un hub USB-C: hosts, clientes y servidores conectando Slack, Gmail, Calendar y datos locales" width="640">
+</p>
+<p align="center"><sub><em>La metáfora, literal: el agente (host) se conecta por un solo "puerto" (el protocolo) a servidores MCP de servicios remotos y datos locales.</em></sub></p>
+
+<p align="center">
   <img src="./images/MCP_Logo.png" alt="Logo de Model Context Protocol" width="180">
 </p>
 
 > **Adopción.** MCP lo adoptaron los harnesses principales — Claude Code,
 > Codex, Cursor, OpenCode — y hay cientos de servidores MCP community para
-> sistemas conocidos: Google Sheets, Drive, Linear, GitHub, Slack, Azure,
-> Postgres, etc. Escribís un servidor MCP una vez y sirve para todos los
-> harnesses.
+> sistemas conocidos: Linear, GitHub, Slack, draw.io, Postgres, etc.
+> Escribes un servidor MCP una vez y sirve para todos los harnesses.
 
 ### 5.2 Por qué se creó — el problema M×N
 
@@ -623,7 +653,7 @@ MCP existe porque antes de él había un problema de **combinatoria**:
   <img src="./images/MCP_1.png" alt="Problema M×N: cada agente con cada herramienta" width="540">
 </p>
 
-> Si tenés **M** agentes y **N** herramientas, necesitás escribir **M×N**
+> Si tienes **M** agentes y **N** herramientas, necesitas escribir **M×N**
 > integraciones. Cada agente habla cada herramienta de forma distinta.
 
 Con MCP:
@@ -647,28 +677,36 @@ internos, con MCP son 13 integraciones; sin MCP, 30.
 MCP estandariza **cómo un agente se entera de qué puede hacer una
 herramienta y cómo la invoca**:
 
-<p align="center">
-  <img src="./images/MCP_2.png" alt="Cómo el harness se conecta a un servidor MCP" width="540">
-</p>
+```mermaid
+sequenceDiagram
+    participant H as 🤖 Harness (cliente MCP)
+    participant S as 🔌 Servidor MCP (p. ej. draw.io)
+    H->>S: al arrancar: ¿qué sabes hacer?
+    S-->>H: "create_diagram" (XML de draw.io o Mermaid)
+    Note over H: registra las capacidades<br/>como tools disponibles
+    H->>S: invoca "create_diagram" (cuando la tarea lo pide)
+    S-->>H: resultado (el diagrama renderizado)
+```
 
-1. **El servidor MCP** expone sus capacidades — "puedo leer una hoja",
-   "puedo escribir una fila", "puedo listar issues".
-2. **El harness descubre** esas capacidades al arrancar — no tenés que
+1. **El servidor MCP** expone sus capacidades — "puedo crear un diagrama",
+   "puedo listar issues", "puedo leer un archivo".
+2. **El harness descubre** esas capacidades al arrancar — no tienes que
    declararlas a mano.
 3. **El harness invoca** la capacidad cuando la necesita, como si fuera
    una tool más.
 
-La diferencia con las tools de S2: las tools de S2 son funciones que **vos
-programás y declarás** en `SCHEMAS`. Las capacidades MCP son **funciones
-que el servidor expone y el harness descubre solo**. Vos no escribís el
-código de la integración — configurás la conexión (auth, alcance) y el
+La diferencia con las tools de S2: las tools de S2 son funciones que **tú
+programas y declaras** en `SCHEMAS`. Las capacidades MCP son **funciones
+que el servidor expone y el harness descubre solo**. Tú no escribes el
+código de la integración — configuras la conexión (auth, alcance) y el
 harness hace el resto.
 
 > **Para los no-software.** Esta es la lección más útil de la sesión: el
-> harness puede leer y escribir sobre la hoja de cálculo que Compras ya
-> usa a diario, sin que nadie programe una integración. Lo configuran una
-> vez y el agente lo usa. El patrón es el mismo para Linear, para Slack,
-> para Azure — cualquier sistema con un servidor MCP.
+> harness puede listar los pendientes del sistema de gestión de trabajo o
+> generar el diagrama de un proceso, sin que nadie programe una
+> integración. Lo configuran una vez y el agente lo usa. El patrón es el
+> mismo para Linear, para Slack, para draw.io — cualquier sistema con un
+> servidor MCP.
 
 ### 5.4 Dónde se guarda y cómo se conecta
 
@@ -686,11 +724,16 @@ del harness):
 ```jsonc
 {
   "mcp": {
-    "google-sheets": {
+    // Servidor remoto sin credenciales — solo la URL:
+    "drawio": {
+      "url": "https://mcp.draw.io/mcp"
+    },
+    // Servidor que requiere auth — el token vive aquí, nunca en git:
+    "linear": {
       "command": "npx",
-      "args": ["-y", "@google/mcp-sheets-server"],
+      "args": ["-y", "<servidor-mcp-linear>"],
       "env": {
-        "GOOGLE_OAUTH_TOKEN": "<token>"
+        "LINEAR_API_KEY": "<token>"
       }
     }
   }
@@ -699,12 +742,12 @@ del harness):
 
 > **Candado.** La auth **nunca** va en el `.env` del repo ni en git. Vive
 > en el archivo de config del harness, que está fuera del repo (o
-> redacted si hay que proyectarlo). Si se expone, rotá al instante — borrar
+> redacted si hay que proyectarlo). Si se expone, rota al instante — borrar
 > el commit no basta.
 
-### 5.5 Práctica: tres MCPs
+### 5.5 Práctica: dos MCPs
 
-La práctica de la Pieza 3 muestra tres MCPs, cada uno con un rol distinto:
+La práctica de la Pieza 3 muestra dos MCPs, cada uno con un rol distinto:
 
 #### Linear MCP — referencia ("así lo usamos nosotros")
 
@@ -718,45 +761,36 @@ la lista.
 > patrón "leer un sistema externo de gestión de trabajo" — el equivalente
 > en Bios podría ser Jira, ServiceNow, o el sistema de tickets de TI.
 
-#### Google Sheets / Drive MCP — demo en vivo
+#### draw.io MCP — demo en vivo: diagramas hablando
 
-El facilitador le pide al harness que **lea** la hoja `Seguimiento Demo
-Clase 4 Bios` (cuenta Google de la agencia, no de Bios). El harness
-devuelve las filas. Después le pide que **escriba** una fila nueva. El
-harness la escribe — la fila aparece en la hoja.
+**draw.io** (la herramienta de diagramas de jgraph, open source) publica su
+propio servidor MCP. Expone la tool `create_diagram`, que recibe un
+diagrama en formato XML de draw.io o una definición Mermaid y lo renderiza
+directamente en la conversación con el agente — con zoom interactivo,
+navegación por capas y el botón *Open in draw.io* para seguir editándolo a
+mano.
 
-> **El mensaje.** Compras, Logística y Producción ya usan una hoja de
-> cálculo a diario. El harness puede leer y escribir sobre esa hoja **sin
-> que nadie programe una integración**. Lo configuran una vez y el agente
-> lo usa. Es la lección más útil de la sesión para los Champions
-> no-software.
+La demo: el facilitador le pide al harness que **dibuje un proceso de uno
+de los cuatro dominios de Bios** (por ejemplo, el flujo de un pedido desde
+bodega hasta muelle). El harness invoca `create_diagram`, el diagrama
+aparece renderizado, y se abre en draw.io para ajustarlo a mano.
 
-**Candados:**
-- **Cuenta de la agencia, nunca de Bios en clase.** Si un Champion
-  pregunta "¿puedo conectar mi cuenta de Bios?", la respuesta es: "sí, en
-  su proyecto, coordinando con TI. El `INSTALL-HARNESS-N8N-CLI.md` los
-  guía."
-- **Hoja de prueba, no hoja productiva.** Lo que se escribe en vivo es
-  dato sintético en una hoja de demo.
-- **No se exponen credenciales.** La auth vive en el config del harness,
-  no se proyecta.
+La conexión sigue el mismo patrón que Linear, con una ventaja: existe un
+**endpoint oficial alojado** (`https://mcp.draw.io/mcp`), así que no
+requiere cuenta ni credenciales — se agrega la URL al config del harness y
+listo. También puede correrse local con Node.js (`npm install && npm
+start`, escucha en `http://localhost:3001/mcp`).
 
-#### Azure MCP Server — mención conceptual
+> **El mensaje.** Mantenimiento documenta procedimientos, Logística dibuja
+> flujos de despacho, Producción arma diagramas de proceso. Con este MCP,
+> el harness genera esos diagramas **hablando** — y nadie programó la
+> integración.
 
-Un slide con:
-- "Azure MCP Server existe — mismo patrón que Sheets."
-- "Bios usa Microsoft/Azure. Cuando TI les habilite acceso corporativo, el
-  patrón es idéntico."
-- "Hoy no lo demostramos — no tenemos cuenta Azure propia sin tarjeta de
-  crédito."
-- "El `mcp/README.md` trae la configuración comentada para que la
-  repliquen cuando tengan acceso."
-
-> **Por qué no se demuestra en vivo.** Las cuentas gratuitas de Azure
-> piden tarjeta de crédito — candado de fricción cero roto. No tenemos
-> cuenta Azure propia de la agencia. Pretender una demo sin cuenta rompe
-> el candado. La mención conceptual cumple el objetivo pedagógico (los
-> Champions saben que el patrón Azure existe) sin exponer el bloqueante.
+> **Nota de compatibilidad.** El render *inline* usa la extensión MCP Apps
+> del protocolo; si el harness no la soporta, existe el servidor
+> alternativo `@drawio/mcp`, que abre el diagrama en el navegador. Detalle
+> en el repo oficial:
+> [jgraph/drawio-mcp](https://github.com/jgraph/drawio-mcp/blob/main/mcp-app-server/README.md).
 
 ---
 
@@ -768,9 +802,14 @@ El cierre es el **momento más importante de la clase**. El mensaje:
 > nodos, configurarlos, conectarlos, probarlos — el harness lo arma
 > hablando en 3-5 minutos."**
 
-<p align="center">
-  <img src="./images/Skills_MCP_2.png" alt="El harness armando un flujo de n8n hablando" width="640">
-</p>
+```mermaid
+flowchart LR
+    F[👤 Facilitador<br/>habla] --> H[🤖 harness]
+    H -->|invoca| CLI[CLI de n8n]
+    CLI -->|crea · configura · activa| W[⚙️ Workflow en n8n]
+    W -->|webhook manual| E[Ejecución visible<br/>en la UI de n8n]
+    E -->|escribe fila<br/>nodo nativo de n8n| SH[📊 Hoja de cálculo<br/>Seguimiento Demo Clase 4]
+```
 
 ### Mecánica (15 min en vivo)
 
@@ -784,7 +823,9 @@ El cierre es el **momento más importante de la clase**. El mensaje:
    activa. El facilitador narra lo que aparece en pantalla.
 4. **Verificación**: el facilitador dispara el flujo (webhook manual) y
    muestra la ejecución en la UI de n8n de la agencia. La salida se escribe
-   en la hoja `Seguimiento Demo Clase 4 Bios` del Bloque 2.
+   en la hoja `Seguimiento Demo Clase 4 Bios` usando el **nodo nativo de
+   hojas de cálculo de n8n** (sin MCP de por medio — el flujo es
+   autocontenido en n8n).
 5. **Cierre verbal**: *"esto tomó 4 minutos hablando. La última vez que
    armamos un flujo así a mano, fueron 25 minutos de arrastrar nodos."*
 
@@ -794,9 +835,11 @@ El cierre es el **momento más importante de la clase**. El mensaje:
 > cierra con el cliente al menos una semana antes de la fecha. La
 > **propuesta recomendada (no vinculante)** es dominio **Logística**:
 > webhook de cambio de estado de pedido → `estado_pedido` +
-> `turnos_muelle` (`bios_ops.py`) → escribe fila en la Sheet del Bloque 2.
+> `turnos_muelle` (`bios_ops.py`) → escribe fila en la hoja `Seguimiento
+> Demo Clase 4 Bios` vía el nodo nativo de n8n.
 > Razón: es el dominio N3 de S1, el más concreto, reusa tools de S2/S4 y
-> se enchufa natural con Sheets. Ver `specs/05-flujo-n8n-cierre.md`.
+> se enchufa natural con el nodo de hojas de cálculo de n8n. Ver
+> `specs/05-flujo-n8n-cierre.md`.
 
 ### Plan B
 
@@ -810,17 +853,22 @@ como si la hubiera armado el harness en vivo (mismo candado de S1/S2/S3).
 > n8n sigue siendo donde vive el flujo, donde se ve la ejecución, donde se
 > controla. El harness es el que lo arma hablando. Esa es la diferencia
 > con S2 y S3: ahí importábamos workflows pre-armados porque armarlos en
-> vivo tomaba demasiado tiempo. Hoy el harness armar en vivo es el
-> mensaje.
+> vivo tomaba demasiado tiempo. Hoy, que el harness lo arme en vivo **es**
+> el mensaje.
 
 ---
 
 ## 7. Las tres piezas en una frase
 
+<p align="center">
+  <img src="./images/Skills_MCP_2.png" alt="El patrón completo: el agente recibe Skills desde el filesystem y capacidades externas desde servidores MCP" width="640">
+</p>
+<p align="center"><sub><em>El patrón completo: Skills desde el filesystem (instrucciones y conocimiento de dominio) + servidores MCP (herramientas y datos externos), alrededor de un mismo agente.</em></sub></p>
+
 | Pieza | En una frase |
 |---|---|
 | 🤖 **Coding Agent** | Un agente ya construido que **opera tu computador** — el loop y las tools básicas ya vienen incluidas. |
-| 🧩 **Skills** | Conocimiento **procedimental empaquetado** que el agente carga cuando entra en un dominio. Vos lo escribís una vez. |
+| 🧩 **Skills** | Conocimiento **procedimental empaquetado** que el agente carga cuando entra en un dominio. Tú lo escribes una vez. |
 | 🔌 **MCP** | El **protocolo estándar** para conectar herramientas externas sin escribir el código de la integración. |
 
 > **Agente + Skill + MCP = el patrón que van a operar en sus proyectos
@@ -828,13 +876,13 @@ como si la hubiera armado el harness en vivo (mismo candado de S1/S2/S3).
 
 ```mermaid
 flowchart LR
-    U[👤 Vos] -->|hablás| H[harness<br/>🤖 Coding Agent]
+    U[👤 Tú] -->|hablas| H[harness<br/>🤖 Coding Agent]
     H -->|carga| S[Skills<br/>🧩 procedimientos]
     H -->|conecta| M[MCP<br/>🔌 herramientas externas]
     H -->|opera| N[n8n · archivos · terminal]
     S -->|orquesta| DB[(bios_ops.db)]
     S -->|orquesta| RAG[Vector store de OpenAI]
-    M -->|lee/escribe| SH[Google Sheets]
+    M -->|dibuja| DIA[draw.io]
     M -->|lista| LIN[Linear]
 ```
 
@@ -875,7 +923,6 @@ Los tres entregables de hoy son la base:
 > **Lo que NO hace esta sesión.**
 > - No construye un MCP propio (se muestra cómo *conectar* MCPs
 >   existentes; construir uno es decisión de proyecto → acompañamiento).
-> - No demuestra Azure MCP Server en vivo (mención conceptual).
 > - No carga datos reales de Bios (mismo candado de S1/S2/S3: lo que un
 >   LLM recibe se envía al proveedor; datos productivos exigen contrato
 >   de tratamiento con TI y Legal).
@@ -893,9 +940,9 @@ Los tres entregables de hoy son la base:
 |---|---|
 | **Harness** | Agente de IA ya construido que opera el computador (lee/escribe archivos, corre comandos, itera solo, pide permiso). Ej.: Claude Code, Codex, OpenCode. |
 | **Harness Engineering** | Disciplina de *operar* agentes ya construidos — instalarlos, configurarlos, extenderlos con Skills y MCP, definir permisos. |
-| **Framework** | Librería que vos programás para construir un agente desde cero. Ej.: LangGraph (visto en S2), CrewAI, AutoGen. |
+| **Framework** | Librería que tú programas para construir un agente desde cero. Ej.: LangGraph (visto en S2), CrewAI, AutoGen. |
 | **Coding Agent** | Sinónimo de harness — un agente que controla el computador, no solo genera texto. |
-| **`AGENTS.md`** | Archivo de contexto del proyecto que el harness carga al arrancar. Es el *system prompt del proyecto*. |
+| **`AGENTS.md`** | Archivo de contexto del proyecto que el harness carga al arrancar. Es el *system prompt del proyecto*. En Claude Code el equivalente se llama `CLAUDE.md` — mismo patrón, distinto nombre. |
 | **Skill** | Paquete de conocimiento procedimental (replicable, determinista, procedimental) que el harness carga cuando la conversación entra en su dominio. |
 | **`SKILL.md`** | El archivo que define una Skill: frontmatter (name, description, when, context) + instrucciones + scripts referenciados. |
 | **`when`** | Campo del frontmatter de una Skill que define cuándo se activa. El más importante. |
@@ -916,6 +963,7 @@ Los tres entregables de hoy son la base:
 - **Codex — documentación oficial.** OpenAI.
 - **OpenCode — repositorio y documentación.** Open source.
 - **Anthropic — Skills (Agent Skills, `SKILL.md`).**
+- **draw.io MCP — jgraph/drawio-mcp.** https://github.com/jgraph/drawio-mcp
 - **Programa Cypher — Sesión 1 (Agentes), Sesión 2 (Cómo se construye), Sesión 3 (RAG).** Este mismo repo.
 - **`AGENTS.md` de este repo** — ejemplo autorreferencial del archivo de contexto del proyecto.
 
@@ -925,6 +973,6 @@ Los tres entregables de hoy son la base:
   <img src="./images/cypher-logo.png" alt="Cypher" width="120">
 </p>
 <p align="center">
-  <em>Qypher · Formación en Inteligencia Artificial</em><br>
+  <em>Cypher · Formación en Inteligencia Artificial</em><br>
   <sub>Los datos de esta sesión son sintéticos y no representan las operaciones de Grupo Bios.</sub>
 </p>
